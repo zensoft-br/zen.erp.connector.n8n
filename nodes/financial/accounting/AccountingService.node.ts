@@ -8,7 +8,7 @@ export class AccountingService implements INodeType {
     description: 'AccountingService operations',
     name: 'accountingService',
     icon: 'file:accounting.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'AccountingService' },

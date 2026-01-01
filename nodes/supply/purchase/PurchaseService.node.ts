@@ -8,7 +8,7 @@ export class PurchaseService implements INodeType {
     description: 'PurchaseService operations',
     name: 'purchaseService',
     icon: 'file:purchase.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'PurchaseService' },

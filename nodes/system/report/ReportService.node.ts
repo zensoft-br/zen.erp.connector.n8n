@@ -8,7 +8,7 @@ export class ReportService implements INodeType {
     description: 'ReportService operations',
     name: 'reportService',
     icon: 'file:report.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'ReportService' },

@@ -8,7 +8,7 @@ export class TargetService implements INodeType {
     description: 'TargetService operations',
     name: 'targetService',
     icon: 'file:target.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'TargetService' },

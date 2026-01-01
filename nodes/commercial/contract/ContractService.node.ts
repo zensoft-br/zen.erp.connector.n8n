@@ -8,7 +8,7 @@ export class ContractService implements INodeType {
     description: 'ContractService operations',
     name: 'contractService',
     icon: 'file:contract.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'ContractService' },

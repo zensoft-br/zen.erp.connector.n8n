@@ -8,7 +8,7 @@ export class AuthService implements INodeType {
     description: 'AuthService operations',
     name: 'authService',
     icon: 'file:auth.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'AuthService' },

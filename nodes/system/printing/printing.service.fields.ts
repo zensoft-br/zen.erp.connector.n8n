@@ -18,8 +18,8 @@ export const operations: INodeProperties[] = [{
     { name: 'PrinterJobReadById', value: 'printerJobReadById' },
     { name: 'PrinterOpPause', value: 'printerOpPause' },
     { name: 'PrinterOpPauseRevert', value: 'printerOpPauseRevert' },
-    { name: 'PrinterOpPrintTestPage', value: 'printerOpPrintTestPage' },
     { name: 'PrinterOpPrinterJobFetch', value: 'printerOpPrinterJobFetch' },
+    { name: 'PrinterOpPrintTestPage', value: 'printerOpPrintTestPage' },
     { name: 'PrinterRead', value: 'printerRead' },
     { name: 'PrinterReadById', value: 'printerReadById' },
     { name: 'PrinterUpdate', value: 'printerUpdate' }

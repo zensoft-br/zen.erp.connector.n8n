@@ -8,7 +8,7 @@ export class FrontendService implements INodeType {
     description: 'FrontendService operations',
     name: 'frontendService',
     icon: 'file:frontend.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'FrontendService' },

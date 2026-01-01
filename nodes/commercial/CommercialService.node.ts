@@ -8,7 +8,7 @@ export class CommercialService implements INodeType {
     description: 'CommercialService operations',
     name: 'commercialService',
     icon: 'file:commercial.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'CommercialService' },

@@ -8,7 +8,7 @@ export class LogisticService implements INodeType {
     description: 'LogisticService operations',
     name: 'logisticService',
     icon: 'file:logistic.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'LogisticService' },

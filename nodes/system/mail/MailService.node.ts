@@ -8,7 +8,7 @@ export class MailService implements INodeType {
     description: 'MailService operations',
     name: 'mailService',
     icon: 'file:mail.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'MailService' },

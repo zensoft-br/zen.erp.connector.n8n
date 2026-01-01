@@ -8,7 +8,7 @@ export class MaterialService implements INodeType {
     description: 'MaterialService operations',
     name: 'materialService',
     icon: 'file:material.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'MaterialService' },

@@ -8,7 +8,7 @@ export class SaleService implements INodeType {
     description: 'SaleService operations',
     name: 'saleService',
     icon: 'file:sale.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'SaleService' },

@@ -8,7 +8,7 @@ export class SecurityService implements INodeType {
     description: 'SecurityService operations',
     name: 'securityService',
     icon: 'file:security.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'SecurityService' },

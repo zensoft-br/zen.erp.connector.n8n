@@ -3,7 +3,8 @@
     "version": "0.1.0",
     "description": "Zen ERP integration for n8n",
     "license": "MIT",
-    "homepage": "",
+    "homepage": "https://github.com/zensoft-br/zen.erp.connector.n8n",
+    "main": "dist/index.js",
     "keywords": [
         "n8n-community-node-package"
     ],
@@ -29,12 +30,11 @@
     ],
     "n8n": {
         "n8nNodesApiVersion": 1,
-        "strict": true,
-        "credentials": [
-            "dist/credentials/FriendGridApi.credentials.js"
-        ],
         "nodes": [
-            "dist/nodes/FriendGrid/FriendGrid.node.js"
+            "dist/nodes/**/*.node.js"
+        ],
+        "credentials": [
+            "dist/credentials/**/*.credentials.js"
         ]
     },
     "devDependencies": {

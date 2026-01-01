@@ -8,7 +8,7 @@ export class CatalogService implements INodeType {
     description: 'CatalogService operations',
     name: 'catalogService',
     icon: 'file:catalog.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'CatalogService' },

@@ -8,7 +8,7 @@ export class IntegrationService implements INodeType {
     description: 'IntegrationService operations',
     name: 'integrationService',
     icon: 'file:integration.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'IntegrationService' },

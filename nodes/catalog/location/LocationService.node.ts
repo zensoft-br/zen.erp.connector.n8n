@@ -8,7 +8,7 @@ export class LocationService implements INodeType {
     description: 'LocationService operations',
     name: 'locationService',
     icon: 'file:location.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'LocationService' },

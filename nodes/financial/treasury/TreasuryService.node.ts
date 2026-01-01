@@ -8,7 +8,7 @@ export class TreasuryService implements INodeType {
     description: 'TreasuryService operations',
     name: 'treasuryService',
     icon: 'file:treasury.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'TreasuryService' },

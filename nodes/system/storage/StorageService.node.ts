@@ -8,7 +8,7 @@ export class StorageService implements INodeType {
     description: 'StorageService operations',
     name: 'storageService',
     icon: 'file:storage.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'StorageService' },

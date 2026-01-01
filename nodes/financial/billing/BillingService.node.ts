@@ -8,7 +8,7 @@ export class BillingService implements INodeType {
     description: 'BillingService operations',
     name: 'billingService',
     icon: 'file:billing.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'BillingService' },

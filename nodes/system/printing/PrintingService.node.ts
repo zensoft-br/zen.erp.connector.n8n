@@ -8,7 +8,7 @@ export class PrintingService implements INodeType {
     description: 'PrintingService operations',
     name: 'printingService',
     icon: 'file:printing.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'PrintingService' },

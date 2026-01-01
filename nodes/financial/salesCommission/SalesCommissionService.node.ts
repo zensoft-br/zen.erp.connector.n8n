@@ -8,7 +8,7 @@ export class SalesCommissionService implements INodeType {
     description: 'SalesCommissionService operations',
     name: 'salesCommissionService',
     icon: 'file:salesCommission.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'SalesCommissionService' },

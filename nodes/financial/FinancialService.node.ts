@@ -8,7 +8,7 @@ export class FinancialService implements INodeType {
     description: 'FinancialService operations',
     name: 'financialService',
     icon: 'file:financial.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'FinancialService' },

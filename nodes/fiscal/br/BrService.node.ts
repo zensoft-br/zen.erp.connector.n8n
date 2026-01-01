@@ -8,7 +8,7 @@ export class BrService implements INodeType {
     description: 'BrService operations',
     name: 'brService',
     icon: 'file:br.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'BrService' },

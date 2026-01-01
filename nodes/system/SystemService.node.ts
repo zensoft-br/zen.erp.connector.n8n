@@ -8,7 +8,7 @@ export class SystemService implements INodeType {
     description: 'SystemService operations',
     name: 'systemService',
     icon: 'file:system.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'SystemService' },

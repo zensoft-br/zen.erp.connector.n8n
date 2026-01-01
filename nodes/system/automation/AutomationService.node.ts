@@ -8,7 +8,7 @@ export class AutomationService implements INodeType {
     description: 'AutomationService operations',
     name: 'automationService',
     icon: 'file:automation.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'AutomationService' },

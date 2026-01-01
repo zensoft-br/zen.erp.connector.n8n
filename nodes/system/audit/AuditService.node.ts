@@ -8,7 +8,7 @@ export class AuditService implements INodeType {
     description: 'AuditService operations',
     name: 'auditService',
     icon: 'file:audit.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'AuditService' },

@@ -8,7 +8,7 @@ export class ShippingService implements INodeType {
     description: 'ShippingService operations',
     name: 'shippingService',
     icon: 'file:shipping.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'ShippingService' },

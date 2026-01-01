@@ -8,7 +8,7 @@ export class TradeService implements INodeType {
     description: 'TradeService operations',
     name: 'tradeService',
     icon: 'file:trade.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'TradeService' },

@@ -8,7 +8,7 @@ export class CompanyService implements INodeType {
     description: 'CompanyService operations',
     name: 'companyService',
     icon: 'file:company.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'CompanyService' },

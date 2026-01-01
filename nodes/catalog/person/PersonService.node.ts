@@ -8,7 +8,7 @@ export class PersonService implements INodeType {
     description: 'PersonService operations',
     name: 'personService',
     icon: 'file:person.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'PersonService' },

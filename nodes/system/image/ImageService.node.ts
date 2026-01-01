@@ -8,7 +8,7 @@ export class ImageService implements INodeType {
     description: 'ImageService operations',
     name: 'imageService',
     icon: 'file:image.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'ImageService' },

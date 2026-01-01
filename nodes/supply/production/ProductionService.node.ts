@@ -8,7 +8,7 @@ export class ProductionService implements INodeType {
     description: 'ProductionService operations',
     name: 'productionService',
     icon: 'file:production.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'ProductionService' },

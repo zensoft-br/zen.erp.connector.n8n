@@ -8,7 +8,7 @@ export class DataService implements INodeType {
     description: 'DataService operations',
     name: 'dataService',
     icon: 'file:data.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'DataService' },

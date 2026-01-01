@@ -8,7 +8,7 @@ export class InfoService implements INodeType {
     description: 'InfoService operations',
     name: 'infoService',
     icon: 'file:info.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'InfoService' },

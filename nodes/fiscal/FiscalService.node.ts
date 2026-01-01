@@ -8,7 +8,7 @@ export class FiscalService implements INodeType {
     description: 'FiscalService operations',
     name: 'fiscalService',
     icon: 'file:fiscal.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'FiscalService' },

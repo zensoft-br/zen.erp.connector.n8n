@@ -8,7 +8,7 @@ export class ProductService implements INodeType {
     description: 'ProductService operations',
     name: 'productService',
     icon: 'file:product.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'ProductService' },

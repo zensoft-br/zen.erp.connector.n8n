@@ -8,7 +8,7 @@ export class TaxationService implements INodeType {
     description: 'TaxationService operations',
     name: 'taxationService',
     icon: 'file:taxation.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'TaxationService' },

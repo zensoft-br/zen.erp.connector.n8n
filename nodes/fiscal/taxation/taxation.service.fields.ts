@@ -6,12 +6,6 @@ export const operations: INodeProperties[] = [{
   type: 'options',
   noDataExpression: true,
   options: [
-    { name: 'TaxCreate', value: 'taxCreate' },
-    { name: 'TaxDelete', value: 'taxDelete' },
-    { name: 'TaxOpReadByCode', value: 'taxOpReadByCode' },
-    { name: 'TaxRead', value: 'taxRead' },
-    { name: 'TaxReadById', value: 'taxReadById' },
-    { name: 'TaxUpdate', value: 'taxUpdate' },
     { name: 'TaxationCreate', value: 'taxationCreate' },
     { name: 'TaxationDelete', value: 'taxationDelete' },
     { name: 'TaxationOperationCreate', value: 'taxationOperationCreate' },
@@ -27,9 +21,15 @@ export const operations: INodeProperties[] = [{
     { name: 'TaxationRuleRead', value: 'taxationRuleRead' },
     { name: 'TaxationRuleReadById', value: 'taxationRuleReadById' },
     { name: 'TaxationRuleUpdate', value: 'taxationRuleUpdate' },
-    { name: 'TaxationUpdate', value: 'taxationUpdate' }
+    { name: 'TaxationUpdate', value: 'taxationUpdate' },
+    { name: 'TaxCreate', value: 'taxCreate' },
+    { name: 'TaxDelete', value: 'taxDelete' },
+    { name: 'TaxOpReadByCode', value: 'taxOpReadByCode' },
+    { name: 'TaxRead', value: 'taxRead' },
+    { name: 'TaxReadById', value: 'taxReadById' },
+    { name: 'TaxUpdate', value: 'taxUpdate' }
   ],
-  default: 'taxCreate',
+  default: 'taxationCreate',
 }];
 
 export const fields: INodeProperties[] = [

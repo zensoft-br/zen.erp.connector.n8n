@@ -134,7 +134,7 @@ ${ops}
     })
     .filter(Boolean);
 
-  operationOptions.sort();
+  operationOptions.sort((a,b) => a.toLowerCase().localeCompare(b.toLowerCase()));
 
   const defaultOp =
     operationOptions[0]?.match(/value: '(.+)'/)?.[1] ?? "";
@@ -188,7 +188,7 @@ export class ${serviceName} implements INodeType {
     description: '${serviceName} operations',
     name: '${camel(h.service)}Service',
     icon: 'file:${h.service}.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: '${serviceName}' },

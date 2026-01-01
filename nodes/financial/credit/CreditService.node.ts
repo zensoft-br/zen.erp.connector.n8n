@@ -8,7 +8,7 @@ export class CreditService implements INodeType {
     description: 'CreditService operations',
     name: 'creditService',
     icon: 'file:credit.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'CreditService' },

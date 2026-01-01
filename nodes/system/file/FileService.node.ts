@@ -8,7 +8,7 @@ export class FileService implements INodeType {
     description: 'FileService operations',
     name: 'fileService',
     icon: 'file:file.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'FileService' },

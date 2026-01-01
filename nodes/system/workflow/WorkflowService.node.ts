@@ -8,7 +8,7 @@ export class WorkflowService implements INodeType {
     description: 'WorkflowService operations',
     name: 'workflowService',
     icon: 'file:workflow.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'WorkflowService' },

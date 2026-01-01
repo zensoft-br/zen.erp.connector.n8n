@@ -8,7 +8,7 @@ export class JobService implements INodeType {
     description: 'JobService operations',
     name: 'jobService',
     icon: 'file:job.service.svg',
-    group: ['output'],
+    group: ['transform'],
     version: 1,
     usableAsTool: true,
     defaults: { name: 'JobService' },
