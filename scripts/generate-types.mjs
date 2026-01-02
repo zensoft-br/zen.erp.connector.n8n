@@ -1,9 +1,9 @@
 import fs from "fs";
 import path from "path";
-import openapiTS from "openapi-typescript";
+import openapiTS, { astToString } from "openapi-typescript";
 
 const OPENAPI_FILE = "./scripts/api.json";
-const OUT_FILE = "./src/types/openapi.ts";
+const OUT_FILE = "./types/zenErp.ts";
 
 const schema = fs.readFileSync(OPENAPI_FILE, "utf-8");
 
@@ -15,11 +15,19 @@ const types = await openapiTS(openapi, {
 });
 
 fs.mkdirSync(path.dirname(OUT_FILE), { recursive: true });
-fs.writeFileSync(OUT_FILE, types);
+
+const ast = await openapiTS(openapi, {
+  alphabetize: true,
+});
+
+const output = Array.isArray(ast)
+  ? ast.map(astToString).join("\n")
+  : astToString(ast);
+
+fs.mkdirSync(path.dirname(OUT_FILE), { recursive: true });
+fs.writeFileSync(OUT_FILE, output);
 
 console.log("✔ OpenAPI types generated:", OUT_FILE);
-
-import yaml from "yaml";
 
 /**
  * Substitui $ref quebrado por { type: "object" }
@@ -58,13 +66,4 @@ export function patchMissingRefs(openapi) {
 
   walk(openapi);
   return openapi;
-}
-
-/**
- * Helper para carregar YAML ou JSON
- */
-export function loadOpenApi(source) {
-  return source.trim().startsWith("{")
-    ? JSON.parse(source)
-    : yaml.parse(source);
 }

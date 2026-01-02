@@ -52,8 +52,9 @@ export class ZenApi implements ICredentialType {
 
 	test: ICredentialTestRequest = {
 		request: {
+			method: 'GET',
 			baseURL: '={{$credentials.baseUrl}}',
-			url: '/health',
+			url: '/auth/me',
 		},
 	};
 }

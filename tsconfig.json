@@ -27,10 +27,10 @@
 		"outDir": "./dist"
 	},
 	"include": [
-		"index.ts",
+		"package.json",
 		"credentials/**/*",
 		"nodes/**/*",
 		"transport/**/*",
-		"package.json", "index.ts",
+		"types/**/*",
 	]
 }
