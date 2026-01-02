@@ -1,4 +1,4 @@
-import type { IDataObject, IExecuteFunctions } from 'n8n-workflow';
+import type { IDataObject, IExecuteFunctions, IHttpRequestOptions } from 'n8n-workflow';
 
 export interface RequestOptions {
 	method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -20,7 +20,7 @@ export async function request(
 
 	const baseUrl = credentials.baseUrl as string;
 
-	const req: any = {
+	const req: IHttpRequestOptions = {
 		url: baseUrl + options.path,
 		method: options.method,
 		json: true,

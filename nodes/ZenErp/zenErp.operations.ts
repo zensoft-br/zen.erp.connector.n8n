@@ -1,4 +1,4 @@
-import type { IExecuteFunctions } from 'n8n-workflow';
+import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
 import { request } from '../../transport/request';
 import {
   resolveRequestBody,
@@ -6,7 +6,7 @@ import {
   resolvePathParams,
 } from '../helpers/resolveParams';
 
-export const operations: Record<string, Record<string, (this: IExecuteFunctions, i: number) => Promise<any>>> = {
+export const operations: Record<string, Record<string, (this: IExecuteFunctions, i: number) => Promise<INodeExecutionData[]>>> = {
 
   "auth": {
 

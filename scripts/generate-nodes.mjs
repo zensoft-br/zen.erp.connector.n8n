@@ -234,7 +234,7 @@ const moduleList = [...modules.values()];
 /* ================= operations.ts ================= */
 
 const operationsTs = `
-import type { IExecuteFunctions } from 'n8n-workflow';
+import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
 import { request } from '${REQUEST_IMPORT}';
 import {
   resolveRequestBody,
@@ -242,7 +242,7 @@ import {
   resolvePathParams,
 } from '../helpers/resolveParams';
 
-export const operations: Record<string, Record<string, (this: IExecuteFunctions, i: number) => Promise<any>>> = {
+export const operations: Record<string, Record<string, (this: IExecuteFunctions, i: number) => Promise<INodeExecutionData[]>>> = {
 ${moduleList.map(mod => `
   "${mod.key}": {
 ${mod.endpoints.map(ep => {
@@ -328,14 +328,10 @@ for (const mod of moduleList) {
   }
 }
 
-const fieldsTs = `
-// @ts-nocheck
-import type { INodeProperties } from 'n8n-workflow';
-
-export const properties: INodeProperties[] = ${JSON.stringify(fields, null, 2)};
-`;
-
-write(path.join(OUT_DIR, `${NODE_NAME}.fields.ts`), fieldsTs);
+write(
+  path.join(OUT_DIR, `${NODE_NAME}.fields.json`),
+  JSON.stringify(fields, null, 2),
+);
 
 /* ================= node.ts ================= */
 
