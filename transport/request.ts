@@ -20,17 +20,39 @@ export async function request(
 
 	const baseUrl = credentials.baseUrl as string;
 
+	const req: any = {
+		url: baseUrl + options.path,
+		method: options.method,
+		json: true,
+	};
+
+	// NÃO envie `headers` se não tiver nada; senão você pode sobrescrever os do credential.
+	if (options.headers && Object.keys(options.headers).length > 0) {
+		req.headers = options.headers;
+	}
+
+	// Idem para qs
+	if (options.qs && Object.keys(options.qs).length > 0) {
+		req.qs = options.qs;
+	}
+
+	// Só envie body quando existir (e não envie body em GET)
+	if (options.body !== undefined && options.method !== 'GET') {
+		req.body = options.body;
+	}
+
+	console.log('[ZenERP][request]', {
+		method: req.method,
+		url: req.url,
+		headers: req.headers,
+		qs: req.qs,
+		hasBody: req.body !== undefined,
+	});
+
 	const response = await this.helpers.httpRequestWithAuthentication.call(
 		this,
 		'zenApi',
-		{
-			url: baseUrl + options.path,
-			headers: options.headers,
-			method: options.method,
-			qs: options.qs,
-			body: options.body,
-			json: true,
-		},
+		req,
 	);
 
 	if (Array.isArray(response)) {

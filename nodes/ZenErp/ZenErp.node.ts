@@ -1,6 +1,5 @@
 import type { IExecuteFunctions, INodeType, INodeTypeDescription } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
-
 import { operations } from './zenErp.operations';
 import { properties } from './zenErp.fields';
 
@@ -13,15 +12,10 @@ export class ZenErp implements INodeType {
     group: ['transform'],
     version: 1,
     usableAsTool: true,
-    defaults: { name: 'ZenErp' },
+    defaults: { name: 'Zen ERP' },
     inputs: ['main'],
     outputs: ['main'],
-    credentials: [
-      {
-        name: 'zenApi',
-        required: true,
-      },
-    ],    
+    credentials: [{ name: 'zenApi', required: true }],
     properties,
   };
 
@@ -29,29 +23,36 @@ export class ZenErp implements INodeType {
     const items = this.getInputData();
     const out = [];
 
-    for (let i = 0; i < items.length; i++) {
-      const moduleKey = this.getNodeParameter('module', i) as string;
-      const opName = this.getNodeParameter('operation', i) as string;
+    function keyFor(module: string , operation: string) {
+      return String(module)
+        .concat(" ")
+        .concat(String(operation))
+        .replace(/[_\-]+/g, " ")
+        .replace(/\s+(\w)/g, (_, c) => c.toUpperCase())
+        .replace(/^(\w)/, (c) => c.toLowerCase())
+        .replace(/[^\w$]/g, "_");
+    }
 
-      const fn = operations[moduleKey]?.[opName];
+    for (let i = 0; i < items.length; i++) {
+      const module = this.getNodeParameter('module', i) as string;
+      const operation = this.getNodeParameter('operation', i) as string;
+      const fn = operations[module]?.[operation];
 
       if (!fn) {
         throw new NodeOperationError(
           this.getNode(),
-          `Operação inválida: module="${moduleKey}" operation="${opName}"`,
+          `Invalid operation: ${module} / ${operation}`,
           { itemIndex: i },
         );
       }
 
-      const res = await fn.call(this, i);
+      // compat: operations.ts expects unique param names per op
+      (this.getNodeParameter as any).origGetNodeParameter ??= this.getNodeParameter;
+      (this as any).__zenKey = keyFor(module, operation);
 
-      // n8n aceita array de items ou item único vindo do helper.
-      // Preserva o comportamento do seu request() atual.
-      if (Array.isArray(res)) {
-        out.push(...res);
-      } else if (res != null) {
-        out.push(res);
-      }
+      const res = await fn.call(this, i);
+      if (Array.isArray(res)) out.push(...res);
+      else if (res) out.push(res);
     }
 
     return [out];
