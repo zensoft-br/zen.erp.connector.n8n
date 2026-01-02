@@ -1,8 +1,8 @@
 # @zensoftbr/n8n-nodes-zenerp
 
-This is an n8n community node. It lets you use _app/service name_ in your n8n workflows.
+This is an n8n community node. It lets you use **Zen ERP** in your n8n workflows.
 
-_App/service name_ is _one or two sentences describing the service this node integrates with_.
+**Zen ERP** is a cloud-based enterprise management system for small and medium businesses that centralizes operations across modules like commercial, finance, inventory, fiscal, and supply chain.
 
 [n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/sustainable-use-license/) workflow automation platform.
 
@@ -20,27 +20,55 @@ Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes
 
 ## Operations
 
-_List the operations supported by your node._
+This node dynamically exposes **all operations available in the Zen ERP API**.
+
+Operations are generated directly from the Zen ERP OpenAPI definition and organized by service/module inside n8n.  
+This ensures that all current and future API endpoints are automatically available without requiring manual updates to the node documentation.
+
+For the complete and up-to-date API reference, see:
+https://api.zenerp.app.br/api
 
 ## Credentials
 
-_If users need to authenticate with the app/service, provide details here. You should include prerequisites (such as signing up with the service), available authentication methods, and how to set them up._
+To use the Zen ERP n8n node, you need a **permanent access token**.  
+This token must be generated in the Zen ERP application by an authorized user.
+
+Follow the steps below:
+
+- Log in to the Zen ERP application.
+- Go to **System → Security → Users**.
+- Select the user for which you want to generate the token.
+- Click **Forward**.
+- Choose **Get a permanent token**.
+- Enter your user credentials to confirm.
+- Copy and securely store the generated token.
+
+After generating the token, paste it into the Zen ERP credentials configuration in n8n.
 
 ## Compatibility
 
-_State the minimum n8n version, as well as which versions you test against. You can also include any known version incompatibility issues._
+- Tested with: **n8n v2.1.5**
+
+No known incompatibilities at this time.
 
 ## Usage
 
-_This is an optional section. Use it to help users with any difficult or confusing aspects of the node._
+The Zen ERP node dynamically exposes all available API operations based on the Zen ERP OpenAPI definition.
 
-_By the time users are looking for community nodes, they probably already know n8n basics. But if you expect new users, you can link to the [Try it out](https://docs.n8n.io/try-it-out/) documentation to help them get started._
+After configuring the credentials, add the Zen ERP node to your workflow and:
+
+- Select the desired service/module.
+- Choose the operation you want to execute.
+- Fill in the required parameters as defined by the API schema.
+
+All available operations, inputs, and outputs are generated automatically and stay in sync with the Zen ERP API.
+
+If you are new to n8n, see the official “Try it out” guide:
+https://docs.n8n.io/try-it-out
 
 ## Resources
 
-* [n8n community nodes documentation](https://docs.n8n.io/integrations/#community-nodes)
-* _Link to app/service documentation._
-
-## Version history
-
-_This is another optional section. If your node has multiple versions, include a short description of available versions and what changed, as well as any compatibility impact._
+- [Zen ERP website](https://zenerp.com.br)
+- [Zen ERP documentation](https://docs.zenerp.com.br)
+- [Zen ERP API documentation](https://api.zenerp.app.br/api)
+- [n8n community nodes documentation](https://docs.n8n.io/integrations/#community-nodes)

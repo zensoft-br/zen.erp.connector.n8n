@@ -67,8 +67,20 @@ export function generateN8nOperationFields(openapi, operation) {
   const prefix = operationIdToParamPrefix(operation.operationId);
   const fields = [];
 
+  const parameters = (operation.parameters || []).map((parameter) => {
+    if (parameter.$ref) {
+      const ref = parameter.$ref.replace(
+        "#/components/parameters/",
+        "",
+      );
+      return openapi.components?.parameters?.[ref] ?? null;
+    } else {
+      return parameter;
+    }
+  });
+
   /* -------- PATH -------- */
-  const pathParams = (operation.parameters || []).filter(p => p.in === "path");
+  const pathParams = parameters.filter(p => p.in === "path");
   if (pathParams.length) {
     fields.push({
       displayName: "Path params",
@@ -94,7 +106,7 @@ export function generateN8nOperationFields(openapi, operation) {
   }
 
   /* -------- QUERY -------- */
-  const queryParams = (operation.parameters || []).filter(p => p.in === "query");
+  const queryParams = parameters.filter(p => p.in === "query");
   if (queryParams.length) {
     fields.push({
       displayName: "Query params",
