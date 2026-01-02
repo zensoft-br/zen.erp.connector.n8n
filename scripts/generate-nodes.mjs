@@ -11,19 +11,23 @@ const REQUEST_IMPORT = "../../transport/request";
 
 const api = JSON.parse(fs.readFileSync(API_FILE, "utf8"));
 
-/* ================= helpers ================= */
-
-const titleCase = (s) =>
-  String(s).replace(/[_\-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-
-const camelize = (s) =>
-  String(s)
-    .replace(/[_\- ]+(\w)/g, (_, c) => c.toUpperCase())
-    .replace(/^(\w)/, (c) => c.toLowerCase());
-
 function ensure(dir) {
   fs.mkdirSync(dir, { recursive: true });
 }
+
+ensure(OUT_DIR);
+
+/* ================= helpers ================= */
+
+const titleCase = (s) =>
+  String(s)
+    .replace(/[_\-]+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+
+const camelCase = (s) =>
+  String(s)
+    .replace(/[_\- ]+(\w)/g, (_, c) => c.toUpperCase())
+    .replace(/^(\w)/, (c) => c.toLowerCase());
 
 function write(file, content) {
   fs.writeFileSync(file, content.trim() + "\n");
@@ -31,46 +35,171 @@ function write(file, content) {
 
 function defaultForType(type) {
   switch (type) {
-    case "number": return 0;
-    case "boolean": return false;
-    case "json": return {};
-    default: return "";
+    case "number":
+    case "integer":
+      return 0;
+    case "boolean":
+      return false;
+    case "json":
+    case "object":
+      return {};
+    default:
+      return "";
   }
 }
 
-/* ================= schema helpers ================= */
+function operationIdToParamPrefix(operationId) {
+  return operationId.replace(/^\/+/, "").replace(/\//g, "_");
+}
 
-function resolveSchema(schema) {
+function resolveSchema(openapi, schema) {
   if (!schema) return null;
   if (schema.$ref) {
     const ref = schema.$ref.replace("#/components/schemas/", "");
-    return api.components?.schemas?.[ref] ?? null;
+    return openapi.components?.schemas?.[ref] ?? null;
   }
   return schema;
 }
 
-function schemaToCollection(schema) {
-  if (!schema || schema.type !== "object") return [];
+/* ================= fields generator ================= */
 
-  // const required = new Set(schema.required ?? []);
+export function generateN8nOperationFields(openapi, operation) {
+  const prefix = operationIdToParamPrefix(operation.operationId);
+  const fields = [];
 
-  return Object.entries(schema.properties ?? {}).map(([name, prop]) => {
-    let type = "string";
-    if (prop.type === "integer" || prop.type === "number") type = "number";
-    else if (prop.type === "boolean") type = "boolean";
-    else if (prop.type === "object") type = "json";
+  /* -------- PATH -------- */
+  const pathParams = (operation.parameters || []).filter(p => p.in === "path");
+  if (pathParams.length) {
+    fields.push({
+      displayName: "Path params",
+      name: `${prefix}_path`,
+      type: "collection",
+      default: {},
+      displayOptions: { show: { operation: [operation.operationId] } },
+      options: pathParams.map(p => {
+        const type =
+          p.schema?.type === "integer" || p.schema?.type === "number"
+            ? "number"
+            : "string";
 
-    return {
-      displayName: titleCase(name),
-      name,
-      type,
-      default: defaultForType(type),
-      // required: required.has(name),
-      ...(name.toLowerCase().includes("password")
-        ? { typeOptions: { password: true } }
-        : {}),
-    };
-  });
+        return {
+          displayName: p.name,
+          name: p.name,
+          type,
+          default: defaultForType(type),
+          // required: true,
+        };
+      }),
+    });
+  }
+
+  /* -------- QUERY -------- */
+  const queryParams = (operation.parameters || []).filter(p => p.in === "query");
+  if (queryParams.length) {
+    fields.push({
+      displayName: "Query params",
+      name: `${prefix}_query`,
+      type: "collection",
+      default: {},
+      displayOptions: { show: { operation: [operation.operationId] } },
+      options: queryParams.map(p => {
+        const type =
+          p.schema?.type === "boolean"
+            ? "boolean"
+            : p.schema?.type === "integer" || p.schema?.type === "number"
+              ? "number"
+              : "string";
+
+        return {
+          displayName: p.name,
+          name: p.name,
+          type,
+          default: defaultForType(type),
+          // required: !!p.required,
+        };
+      }),
+    });
+  }
+
+  /* -------- BODY -------- */
+  if (operation.requestBody) {
+    const schema = resolveSchema(
+      openapi,
+      operation.requestBody.content?.["application/json"]?.schema
+    );
+
+    const required = new Set(schema?.required || []);
+    const bodyFields =
+      schema?.type === "object"
+        ? Object.entries(schema.properties || {}).map(([name, prop]) => {
+          const type =
+            prop.type === "integer" || prop.type === "number"
+              ? "number"
+              : prop.type === "boolean"
+                ? "boolean"
+                : prop.type === "object"
+                  ? "json"
+                  : "string";
+
+          return {
+            displayName: name,
+            name,
+            type,
+            default: defaultForType(type),
+            // required: required.has(name),
+          };
+        })
+        : [];
+
+    fields.push({
+      displayName: "Body format",
+      name: `${prefix}_bodyFormat`,
+      type: "options",
+      default: "fields",
+      displayOptions: { show: { operation: [operation.operationId] } },
+      options: [
+        { name: "Fields", value: "fields" },
+        { name: "JSON", value: "json" },
+      ],
+    });
+
+    fields.push({
+      displayName: "Body",
+      name: `${prefix}_body`,
+      type: "collection",
+      default: {},
+      displayOptions: {
+        show: {
+          operation: [operation.operationId],
+          [`${prefix}_bodyFormat`]: ["fields"],
+        },
+      },
+      options: bodyFields,
+    });
+
+    fields.push({
+      displayName: "Body (JSON)",
+      name: `${prefix}_bodyJson`,
+      type: "collection",
+      default: {},
+      displayOptions: {
+        show: {
+          operation: [operation.operationId],
+          [`${prefix}_bodyFormat`]: ["json"],
+        },
+      },
+      options: [
+        {
+          displayName: "JSON",
+          name: "json",
+          type: "json",
+          default: {},
+        },
+      ],
+    });
+  }
+
+  return fields;
 }
 
 /* ================= collect endpoints ================= */
@@ -93,7 +222,7 @@ for (const [rawPath, methods] of Object.entries(api.paths ?? {})) {
       path: rawPath,
       method: httpMethod.toUpperCase(),
       operationId: def.operationId,
-      opName: camelize(def.operationId.split("/").pop()),
+      opName: camelCase(def.operationId.split("/").pop()),
       parameters: def.parameters ?? [],
       requestBody: def.requestBody,
     });
@@ -102,92 +231,77 @@ for (const [rawPath, methods] of Object.entries(api.paths ?? {})) {
 
 const moduleList = [...modules.values()];
 
-/* ================= generate operations.ts ================= */
-
-ensure(OUT_DIR);
-
-function opKey(modKey, opName) {
-  return camelize(`${modKey} ${opName}`);
-}
+/* ================= operations.ts ================= */
 
 const operationsTs = `
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import type { IExecuteFunctions } from 'n8n-workflow';
 import { request } from '${REQUEST_IMPORT}';
+import {
+  resolveRequestBody,
+  resolveQueryParams,
+  resolvePathParams,
+} from '../helpers/resolveParams';
 
-export const operations: Record<
-  string,
-  Record<string, (this: IExecuteFunctions, i: number) => Promise<any>>
-> = {
-${moduleList.map(mod => {
-  return `
+export const operations: Record<string, Record<string, (this: IExecuteFunctions, i: number) => Promise<any>>> = {
+${moduleList.map(mod => `
   "${mod.key}": {
 ${mod.endpoints.map(ep => {
-    const usesPathParams = /\{(\w+)\}/.test(ep.path);
-    const pathExpr = ep.path.replace(/\{(\w+)\}/g, (_, p) =>
-      usesPathParams ? `\${pathParams.${p}}` : `{${p}}`
+  const prefix = operationIdToParamPrefix(ep.operationId);
+  const pathExpr = ep.path.replace(/\{(\w+)\}/g, (_, p) => `\${pathParams.${p}}`);
+
+  const resolvers = [];
+
+  // sempre existe
+  resolvers.push(`const opId = '${prefix}';`);
+
+  // path params só se existirem no path
+  if (/\{(\w+)\}/.test(ep.path)) {
+    resolvers.push(
+      `const pathParams = resolvePathParams(this, i, opId);`,
     );
+  }
 
-    const key = opKey(mod.key, ep.opName);
+  // query params (sempre seguro chamar)
+  resolvers.push(
+    `const qs = resolveQueryParams(this, i, opId);`,
+  );
 
-    return `
-      "${ep.opName}": async function (this: IExecuteFunctions, i: number) {
-      ${usesPathParams
-        ? `const pathParams = this.getNodeParameter('pathParams_${key}', i, {}) as IDataObject;`
-        : ""
-      }
+  // headers (sempre seguro chamar)
+  // resolvers.push(
+  //   `const headers = resolveHeaders(this, i, opId);`,
+  // );
 
-      const rawQs = this.getNodeParameter('qs_${key}', i, {}) as IDataObject;
-      const qs: Record<string, string> = {};
-      for (const [k, v] of Object.entries(rawQs)) {
-        if (v !== undefined && v !== null) qs[k] = String(v);
-      }
+  // body só se a operação tiver requestBody
+  if (ep.requestBody) {
+    resolvers.push(
+      `const body = resolveRequestBody(this, i, opId);`,
+    );
+  }
 
-      const rawHeaders = this.getNodeParameter('headers_${key}', i, {}) as IDataObject;
-      const headers: Record<string, string> = {};
-      for (const [k, v] of Object.entries(rawHeaders)) {
-        if (v !== undefined && v !== null) headers[k] = String(v);
-      }
+  return `
+    "${ep.operationId}": async function (this: IExecuteFunctions, i: number) {
+      ${resolvers.join("\n      ")}      
 
-      ${ep.requestBody
-        ? `const body = this.getNodeParameter('body_${key}', i, {}) as IDataObject;`
-        : ""
-      }
-
-      const options: any = {
+      return request.call(this, {
         method: "${ep.method}",
         path: \`${pathExpr}\`,
-      };
-
-      if (Object.keys(qs).length > 0) {
-        options.qs = qs;
-      }
-
-      if (Object.keys(headers).length > 0) {
-        options.headers = headers;
-      }
-
-      ${ep.requestBody ? `
-      if (body && Object.keys(body).length > 0) {
-        options.body = body;
-      }
-      ` : ""}
-
-      return request.call(this, options);
-    }
-`;
+        qs,
+        ${ep.requestBody ? "body," : ""}
+      });
+    }`;
 }).join(",")}
-  }`;
-}).join(",")}
+  }`
+).join(",")}
 };
 `;
 
 write(path.join(OUT_DIR, `${NODE_NAME}.operations.ts`), operationsTs);
 
-/* ================= generate fields.ts ================= */
+/* ================= fields.ts ================= */
 
 const fields = [];
 
-/* module */
+/* module + operation */
 fields.push({
   displayName: "Module",
   name: "module",
@@ -196,7 +310,6 @@ fields.push({
   default: moduleList[0].key,
 });
 
-/* operation */
 for (const mod of moduleList) {
   fields.push({
     displayName: "Operation",
@@ -205,83 +318,20 @@ for (const mod of moduleList) {
     displayOptions: { show: { module: [mod.key] } },
     options: mod.endpoints.map(e => ({
       name: titleCase(e.opName),
-      value: e.opName,
+      value: e.operationId,
     })),
     default: mod.endpoints[0].opName,
   });
-}
 
-/* ---------- PER-OPERATION FIELDS (UNIQUE NAMES) ---------- */
-
-for (const mod of moduleList) {
   for (const ep of mod.endpoints) {
-    const show = { module: [mod.key], operation: [ep.opName] };
-    const key = opKey(mod.key, ep.opName);
-
-    const pathParams = ep.parameters.filter(p => p.in === "path");
-    if (pathParams.length) {
-      fields.push({
-        displayName: "Path params",
-        name: `pathParams_${key}`,
-        type: "collection",
-        default: {},
-        displayOptions: { show },
-        options: pathParams.map(p => ({
-          displayName: titleCase(p.name),
-          name: p.name,
-          type: p.schema?.type === "integer" ? "number" : "string",
-          default: defaultForType(p.schema?.type),
-          // required: true,
-        })),
-      });
-    }
-
-    const queryParams = ep.parameters.filter(p => p.in === "query");
-    if (queryParams.length) {
-      fields.push({
-        displayName: "Query params",
-        name: `qs_${key}`,
-        type: "collection",
-        default: {},
-        displayOptions: { show },
-        options: queryParams.map(p => ({
-          displayName: titleCase(p.name),
-          name: p.name,
-          type: p.schema?.type === "boolean" ? "boolean" : "string",
-          default: defaultForType(p.schema?.type),
-        })),
-      });
-    }
-
-    fields.push({
-      displayName: "Headers",
-      name: `headers_${key}`,
-      type: "collection",
-      default: {},
-      displayOptions: { show },
-      options: [],
-    });
-
-    if (ep.requestBody) {
-      const schema = resolveSchema(
-        ep.requestBody.content?.["application/json"]?.schema
-      );
-
-      fields.push({
-        displayName: "Body",
-        name: `body_${key}`,
-        type: "collection",
-        default: {},
-        // required: ep.requestBody.required === true,
-        displayOptions: { show },
-        options: schemaToCollection(schema),
-      });
-    }
+    fields.push(...generateN8nOperationFields(api, ep));
   }
 }
 
 const fieldsTs = `
+// @ts-nocheck
 import type { INodeProperties } from 'n8n-workflow';
+
 export const properties: INodeProperties[] = ${JSON.stringify(fields, null, 2)};
 `;
 
@@ -315,16 +365,6 @@ export class ${NODE_CLASS} implements INodeType {
     const items = this.getInputData();
     const out = [];
 
-    function keyFor(module: string , operation: string) {
-      return String(module)
-        .concat(" ")
-        .concat(String(operation))
-        .replace(/[_\\-]+/g, " ")
-        .replace(/\\s+(\\w)/g, (_, c) => c.toUpperCase())
-        .replace(/^(\\w)/, (c) => c.toLowerCase())
-        .replace(/[^\\w$]/g, "_");
-    }
-
     for (let i = 0; i < items.length; i++) {
       const module = this.getNodeParameter('module', i) as string;
       const operation = this.getNodeParameter('operation', i) as string;
@@ -338,10 +378,6 @@ export class ${NODE_CLASS} implements INodeType {
         );
       }
 
-      // compat: operations.ts expects unique param names per op
-      (this.getNodeParameter as any).origGetNodeParameter ??= this.getNodeParameter;
-      (this as any).__zenKey = keyFor(module, operation);
-
       const res = await fn.call(this, i);
       if (Array.isArray(res)) out.push(...res);
       else if (res) out.push(res);
@@ -354,4 +390,4 @@ export class ${NODE_CLASS} implements INodeType {
 
 write(path.join(OUT_DIR, `${NODE_CLASS}.node.ts`), nodeTs);
 
-console.log("✔ Generator completo: fields únicos por operação (sem displayOptions em child) ✔");
+console.log("✔ Generator refatorado usando generateN8nOperationFields");

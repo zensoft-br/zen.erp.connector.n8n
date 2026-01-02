@@ -41,14 +41,6 @@ export async function request(
 		req.body = options.body;
 	}
 
-	console.log('[ZenERP][request]', {
-		method: req.method,
-		url: req.url,
-		headers: req.headers,
-		qs: req.qs,
-		hasBody: req.body !== undefined,
-	});
-
 	const response = await this.helpers.httpRequestWithAuthentication.call(
 		this,
 		'zenApi',

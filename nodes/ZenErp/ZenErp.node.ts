@@ -23,16 +23,6 @@ export class ZenErp implements INodeType {
     const items = this.getInputData();
     const out = [];
 
-    function keyFor(module: string , operation: string) {
-      return String(module)
-        .concat(" ")
-        .concat(String(operation))
-        .replace(/[_\-]+/g, " ")
-        .replace(/\s+(\w)/g, (_, c) => c.toUpperCase())
-        .replace(/^(\w)/, (c) => c.toLowerCase())
-        .replace(/[^\w$]/g, "_");
-    }
-
     for (let i = 0; i < items.length; i++) {
       const module = this.getNodeParameter('module', i) as string;
       const operation = this.getNodeParameter('operation', i) as string;
@@ -45,10 +35,6 @@ export class ZenErp implements INodeType {
           { itemIndex: i },
         );
       }
-
-      // compat: operations.ts expects unique param names per op
-      (this.getNodeParameter as any).origGetNodeParameter ??= this.getNodeParameter;
-      (this as any).__zenKey = keyFor(module, operation);
 
       const res = await fn.call(this, i);
       if (Array.isArray(res)) out.push(...res);
