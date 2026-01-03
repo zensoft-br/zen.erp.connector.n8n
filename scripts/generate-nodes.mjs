@@ -289,32 +289,28 @@ const moduleList = [...modules.values()];
 
 /* ================= operations.ts ================= */
 
-const operationsTs = `
-import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
-import { createHandler } from './helpers';
-
-export const operations: Record<string, Record<string, (this: IExecuteFunctions, i: number) => Promise<INodeExecutionData[]>>> = {
+const operationsTs = `{
 ${moduleList.map(mod => `  "${mod.key}": {${mod.endpoints.map(ep => {
   const prefix = operationIdToParamPrefix(ep.operationId);
 
   return `
-    "${ep.operationId}": createHandler({
-      operationId: "${ep.operationId}",
-      method: "${ep.method}",
-      path: "${ep.path}",
-      hasBody: ${!!ep.requestBody},
-      security: {
-        auth: ${ep.security.auth},
-        tenant: ${ep.security.tenant},
-      },
-    })`;
+    "${ep.operationId}": {
+      "operationId": "${ep.operationId}",
+      "method": "${ep.method}",
+      "path": "${ep.path}",
+      "hasBody": ${!!ep.requestBody},
+      "security": {
+        "auth": ${ep.security.auth},
+        "tenant": ${ep.security.tenant}
+      }
+    }`;
 }).join(",")}
   }`
 ).join(",")}
-};
+}
 `;
 
-write(path.join(OUT_DIR, `${NODE_NAME}.operations.ts`), operationsTs);
+write(path.join(OUT_DIR, `ZenErp.meta.operations.json`), operationsTs);
 
 /* ================= fields.ts ================= */
 
@@ -348,7 +344,7 @@ for (const mod of moduleList) {
 }
 
 write(
-  path.join(OUT_DIR, `${NODE_NAME}.fields.json`),
+  path.join(OUT_DIR, `ZenErp.meta.fields.json`),
   JSON.stringify(fields, null, 2),
 );
 

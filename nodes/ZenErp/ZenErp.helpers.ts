@@ -1,5 +1,24 @@
-import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
+import type { IDataObject } from 'n8n-workflow';
+import { IExecuteFunctions, INodeExecutionData } from "n8n-workflow";
 import { request } from '../../transport/request';
+
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+export type OperationSecurity = {
+    auth: boolean;
+    tenant: boolean;
+};
+
+export type OperationMeta = {
+    operationId: string;
+    method: HttpMethod;
+    path: string;
+    hasBody: boolean;
+    security: OperationSecurity;
+};
+
+export type OperationHandler = (this: IExecuteFunctions, i: number) => Promise<INodeExecutionData[]>;
+
 
 function operationIdToParamPrefix(operationId: string): string {
     return operationId.replace(/^\/+/, "").replace(/\//g, "_");
@@ -75,44 +94,6 @@ function resolveQueryParams(
 
     return qs;
 }
-
-// export function resolveHeaders(
-//     ctx: IExecuteFunctions,
-//     itemIndex: number,
-//     opId: string,
-// ): Record<string, string> {
-
-//     const raw = ctx.getNodeParameter(
-//         `${opId}_headers`,
-//         itemIndex,
-//         {},
-//     ) as IDataObject;
-
-//     const headers: Record<string, string> = {};
-
-//     for (const [k, v] of Object.entries(raw)) {
-//         if (v !== undefined && v !== null && v !== '') {
-//             headers[k] = String(v);
-//         }
-//     }
-
-//     return headers;
-// }
-
-type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-
-type SecurityMeta = {
-    auth: boolean;
-    tenant: boolean;
-};
-
-type OperationMeta = {
-    operationId: string;
-    method: HttpMethod;
-    path: string;
-    hasBody: boolean;
-    security: SecurityMeta;
-};
 
 export function createHandler(op: OperationMeta) {
     return async function (

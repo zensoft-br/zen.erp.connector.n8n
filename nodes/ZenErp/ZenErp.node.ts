@@ -1,14 +1,18 @@
-import type { IExecuteFunctions, INodeType, INodeTypeDescription } from 'n8n-workflow';
+import type { IExecuteFunctions, INodeProperties, INodeType, INodeTypeDescription } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
-import { properties } from './zenErp.fields';
-import { operations } from './zenErp.operations';
+import { createHandler, OperationHandler, OperationMeta } from './ZenErp.helpers';
+import rawFields from './ZenErp.meta.fields.json';
+import rawOperations from './ZenErp.meta.operations.json';
+
+const fields = rawFields as INodeProperties[];
+const operations = rawOperations as Record<string, Record<string, OperationMeta>>;
 
 export class ZenErp implements INodeType {
   description: INodeTypeDescription = {
     displayName: 'Zen ERP',
     description: 'Zen ERP connector node',
     name: 'zenErp',
-    icon: 'file:zenErp.svg',
+    icon: 'file:ZenErp.svg',
     group: ['transform'],
     version: 1,
     usableAsTool: true,
@@ -21,7 +25,7 @@ export class ZenErp implements INodeType {
       name: 'zenApi',
       required: true
     }],
-    properties,
+    properties: fields,
   };
 
   async execute(this: IExecuteFunctions) {
@@ -31,9 +35,10 @@ export class ZenErp implements INodeType {
     for (let i = 0; i < items.length; i++) {
       const resource = this.getNodeParameter('resource', i) as string;
       const operation = this.getNodeParameter('operation', i) as string;
-      const fn = operations[resource]?.[operation];
 
-      if (!fn) {
+      const target = operations[resource]?.[operation];
+
+      if (!target) {
         throw new NodeOperationError(
           this.getNode(),
           `Invalid operation: ${resource} / ${operation}`,
@@ -41,11 +46,29 @@ export class ZenErp implements INodeType {
         );
       }
 
+      const fn = getOperationHandler(target);
+
       const res = await fn.call(this, i);
+
       if (Array.isArray(res)) out.push(...res);
       else if (res) out.push(res);
     }
 
     return [out];
   }
+
+}
+
+const handlerCache = new Map<string, OperationHandler>();
+
+export function getOperationHandler(op: OperationMeta): OperationHandler {
+  const key = op.operationId;
+
+  let fn = handlerCache.get(key);
+  if (!fn) {
+    fn = createHandler(op);
+    handlerCache.set(key, fn);
+  }
+
+  return fn;
 }
