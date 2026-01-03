@@ -2,10 +2,7 @@ import fs from "fs";
 import { readFile } from "fs/promises";
 import path from "path";
 
-/* ================= config ================= */
-
 const OUT_DIR = "./nodes/ZenErp";
-const NODE_NAME = "zenErp";
 
 async function loadApi(source) {
   if (source.startsWith("http://") || source.startsWith("https://")) {
@@ -27,8 +24,6 @@ function ensureDir(dir) {
 }
 
 ensureDir(OUT_DIR);
-
-/* ================= helpers ================= */
 
 const titleCase = (s) =>
   String(s)
@@ -101,8 +96,6 @@ function resolveSecurityFlags(operation) {
     tenant: !!rule.Tenant,
   };
 }
-
-/* ================= fields generator ================= */
 
 export function generateN8nOperationFields(openapi, operation) {
   const prefix = operationIdToParamPrefix(operation.operationId);
@@ -255,16 +248,14 @@ export function generateN8nOperationFields(openapi, operation) {
   return fields;
 }
 
-/* ================= collect endpoints ================= */
-
-const modules = new Map();
+const resources = new Map();
 
 for (const [rawPath, methods] of Object.entries(api.paths ?? {})) {
   for (const [httpMethod, def] of Object.entries(methods ?? {})) {
     const tag = def.tags?.[0] ?? "default";
 
-    if (!modules.has(tag)) {
-      modules.set(tag, {
+    if (!resources.has(tag)) {
+      resources.set(tag, {
         key: tag,
         label: titleCase(tag),
         endpoints: [],
@@ -273,7 +264,7 @@ for (const [rawPath, methods] of Object.entries(api.paths ?? {})) {
 
     const security = resolveSecurityFlags(def);
 
-    modules.get(tag).endpoints.push({
+    resources.get(tag).endpoints.push({
       path: rawPath,
       method: httpMethod.toUpperCase(),
       operationId: def.operationId,
@@ -285,12 +276,10 @@ for (const [rawPath, methods] of Object.entries(api.paths ?? {})) {
   }
 }
 
-const moduleList = [...modules.values()];
+const resourceList = [...resources.values()];
 
-/* ================= operations.ts ================= */
-
-const operationsTs = `{
-${moduleList.map(mod => `  "${mod.key}": {${mod.endpoints.map(ep => {
+const operations_json = `{
+${resourceList.map(mod => `  "${mod.key}": {${mod.endpoints.map(ep => {
   const prefix = operationIdToParamPrefix(ep.operationId);
 
   return `
@@ -310,42 +299,37 @@ ${moduleList.map(mod => `  "${mod.key}": {${mod.endpoints.map(ep => {
 }
 `;
 
-write(path.join(OUT_DIR, `ZenErp.meta.operations.json`), operationsTs);
+write(path.join(OUT_DIR, `ZenErp.meta.operations.json`), operations_json);
 
-/* ================= fields.ts ================= */
+const fields_json = [];
 
-const fields = [];
-
-/* module + operation */
-fields.push({
+/* resource + operation */
+fields_json.push({
   displayName: "Resource",
   name: "resource",
   type: "options",
-  options: moduleList.map(m => ({ name: m.label, value: m.key })),
-  default: moduleList[0].key,
+  options: resourceList.map(m => ({ name: m.label, value: m.key })),
+  default: resourceList[0].key,
 });
 
-for (const mod of moduleList) {
-  fields.push({
+for (const resource of resourceList) {
+  fields_json.push({
     displayName: "Operation",
     name: "operation",
     type: "options",
-    displayOptions: { show: { resource: [mod.key] } },
-    options: mod.endpoints.map(e => ({
+    displayOptions: { show: { resource: [resource.key] } },
+    options: resource.endpoints.map(e => ({
       name: titleCase(e.opName),
       value: e.operationId,
     })),
-    default: mod.endpoints[0].opName,
+    default: resource.endpoints[0].opName,
   });
 
-  for (const ep of mod.endpoints) {
-    fields.push(...generateN8nOperationFields(api, ep));
+  for (const ep of resource.endpoints) {
+    fields_json.push(...generateN8nOperationFields(api, ep));
   }
 }
 
-write(
-  path.join(OUT_DIR, `ZenErp.meta.fields.json`),
-  JSON.stringify(fields, null, 2),
-);
+write(path.join(OUT_DIR, `ZenErp.meta.fields.json`), JSON.stringify(fields_json, null, 2));
 
-console.log("✔ Generator refatorado usando generateN8nOperationFields");
+console.log("✔ Generator executed successfully");
