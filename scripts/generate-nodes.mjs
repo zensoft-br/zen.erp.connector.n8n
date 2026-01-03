@@ -16,7 +16,7 @@ async function loadApi(source) {
   return JSON.parse(await readFile(source, "utf8"));
 }
 
-const api = await loadApi("./scripts/schema.json");
+const api = await loadApi("../zen.erp.ws/src/main/webapp/api/schema.json");
 // const api = await loadApi("https://api.zenerp.app.br/api/schema.json");
 
 function ensureDir(dir) {
@@ -97,9 +97,10 @@ function resolveSecurityFlags(operation) {
   };
 }
 
-export function generateN8nOperationFields(openapi, operation) {
+function generateN8nOperationFields(openapi, operation) {
+  const result = [];
+
   const prefix = operationIdToParamPrefix(operation.operationId);
-  const fields = [];
 
   const parameters = (operation.parameters || []).map((parameter) => {
     if (parameter.$ref) {
@@ -116,7 +117,7 @@ export function generateN8nOperationFields(openapi, operation) {
   /* -------- PATH -------- */
   const pathParams = parameters.filter(p => p.in === "path");
   if (pathParams.length) {
-    fields.push({
+    result.push({
       displayName: "Path params",
       name: `${prefix}_path`,
       type: "collection",
@@ -142,7 +143,7 @@ export function generateN8nOperationFields(openapi, operation) {
   /* -------- QUERY -------- */
   const queryParams = parameters.filter(p => p.in === "query");
   if (queryParams.length) {
-    fields.push({
+    result.push({
       displayName: "Query params",
       name: `${prefix}_query`,
       type: "collection",
@@ -197,7 +198,7 @@ export function generateN8nOperationFields(openapi, operation) {
         })
         : [];
 
-    fields.push({
+    result.push({
       displayName: "Body format",
       name: `${prefix}_bodyFormat`,
       type: "options",
@@ -209,7 +210,7 @@ export function generateN8nOperationFields(openapi, operation) {
       ],
     });
 
-    fields.push({
+    result.push({
       displayName: "Body",
       name: `${prefix}_body`,
       type: "collection",
@@ -223,7 +224,7 @@ export function generateN8nOperationFields(openapi, operation) {
       options: bodyFields,
     });
 
-    fields.push({
+    result.push({
       displayName: "Body (JSON)",
       name: `${prefix}_bodyJson`,
       type: "collection",
@@ -245,7 +246,7 @@ export function generateN8nOperationFields(openapi, operation) {
     });
   }
 
-  return fields;
+  return result;
 }
 
 const resources = new Map();
@@ -277,43 +278,45 @@ for (const [rawPath, methods] of Object.entries(api.paths ?? {})) {
 }
 
 const resourceList = [...resources.values()];
-
-const operations_json = `{
-${resourceList.map(mod => `  "${mod.key}": {${mod.endpoints.map(ep => {
-  const prefix = operationIdToParamPrefix(ep.operationId);
-
-  return `
-    "${ep.operationId}": {
-      "operationId": "${ep.operationId}",
-      "method": "${ep.method}",
-      "path": "${ep.path}",
-      "hasBody": ${!!ep.requestBody},
-      "security": {
-        "auth": ${ep.security.auth},
-        "tenant": ${ep.security.tenant}
-      }
-    }`;
-}).join(",")}
-  }`
-).join(",")}
+resourceList.sort((a, b) => a.key.localeCompare(b.key));
+for (const resource of resourceList) {
+  resource.endpoints.sort((a, b) => a.operationId.localeCompare(b.operationId));
 }
-`;
 
-write(path.join(OUT_DIR, `ZenErp.meta.operations.json`), operations_json);
+const metaOperation = {};
+for (const resource of resourceList) {
+  const resourceObj = (metaOperation[resource.key] = {});
+  for (const operation of resource.endpoints) {
+    resourceObj[operation.operationId] = {
+      operationId: operation.operationId,
+      method: operation.method,
+      path: operation.path,
+      hasBody: !!operation.requestBody,
+      security: {
+        auth: operation.security.auth,
+        tenant: operation.security.tenant
+      }
+    }
+  }
+}
 
-const fields_json = [];
+write(path.join(OUT_DIR, `ZenErp.meta.operations.json`), JSON.stringify(metaOperation, null, 2));
 
-/* resource + operation */
-fields_json.push({
+const metaFields = [];
+
+metaFields.push({
   displayName: "Resource",
   name: "resource",
   type: "options",
-  options: resourceList.map(m => ({ name: m.label, value: m.key })),
+  options: resourceList.map(m => ({
+    name: m.label,
+    value: m.key
+  })),
   default: resourceList[0].key,
 });
 
 for (const resource of resourceList) {
-  fields_json.push({
+  metaFields.push({
     displayName: "Operation",
     name: "operation",
     type: "options",
@@ -326,10 +329,10 @@ for (const resource of resourceList) {
   });
 
   for (const ep of resource.endpoints) {
-    fields_json.push(...generateN8nOperationFields(api, ep));
+    metaFields.push(...generateN8nOperationFields(api, ep));
   }
 }
 
-write(path.join(OUT_DIR, `ZenErp.meta.fields.json`), JSON.stringify(fields_json, null, 2));
+write(path.join(OUT_DIR, `ZenErp.meta.fields.json`), JSON.stringify(metaFields, null, 2));
 
 console.log("✔ Generator executed successfully");
