@@ -1,6 +1,6 @@
 {
     "name": "@zensoftbr/n8n-nodes-zenerp",
-    "version": "0.1.6",
+    "version": "0.1.7",
     "description": "Zen ERP integration for n8n",
     "license": "MIT",
     "homepage": "https://github.com/zensoft-br/zen.erp.connector.n8n",
