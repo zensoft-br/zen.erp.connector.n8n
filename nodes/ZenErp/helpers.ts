@@ -1,4 +1,4 @@
-import type { IDataObject, IExecuteFunctions } from 'n8n-workflow';
+import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
 
 export function resolveRequestBody(
     ctx: IExecuteFunctions,
@@ -86,4 +86,49 @@ export function resolveHeaders(
     }
 
     return headers;
+}
+
+async function executeOperation(
+    this: IExecuteFunctions,
+    i: number,
+    op: {
+        operationId: string;
+        method: string;
+        path: string;
+        hasBody: boolean;
+    }
+): Promise<INodeExecutionData[]> {
+    const opId = operationIdToParamPrefix(op.operationId);
+
+    const pathParams = /\{/.test(op.path)
+        ? resolvePathParams(this, i, opId)
+        : undefined;
+
+    const qs = resolveQueryParams(this, i, opId);
+
+    const body = op.hasBody
+        ? resolveRequestBody(this, i, opId)
+        : undefined;
+
+    const path = op.path.replace(
+        /\{(\w+)\}/g,
+        (_, p) => pathParams?.[p],
+    );
+
+    return request.call(this, {
+        method: op.method,
+        path,
+        qs,
+        ...(op.hasBody ? { body } : {}),
+    });
+}
+
+function createHandler(op) {
+    return async function (this: IExecuteFunctions, i: number) {
+        return executeOperation.call(this, i, op);
+    };
+}
+
+function operationIdToParamPrefix(operationId: string): string {
+    return operationId.replace(/^\/+/, "").replace(/\//g, "_");
 }

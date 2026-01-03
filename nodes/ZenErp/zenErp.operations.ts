@@ -4,7 +4,7 @@ import {
   resolveRequestBody,
   resolveQueryParams,
   resolvePathParams,
-} from '../helpers/resolveParams';
+} from './helpers';
 
 export const operations: Record<string, Record<string, (this: IExecuteFunctions, i: number) => Promise<INodeExecutionData[]>>> = {
 

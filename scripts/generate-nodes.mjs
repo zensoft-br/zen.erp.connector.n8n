@@ -1,21 +1,34 @@
 import fs from "fs";
+import { readFile } from "fs/promises";
 import path from "path";
 
 /* ================= config ================= */
 
-const API_FILE = "./scripts/api.json";
 const OUT_DIR = "./nodes/ZenErp";
 const NODE_CLASS = "ZenErp";
 const NODE_NAME = "zenErp";
 const REQUEST_IMPORT = "../../transport/request";
 
-const api = JSON.parse(fs.readFileSync(API_FILE, "utf8"));
+async function loadApi(source) {
+  if (source.startsWith("http://") || source.startsWith("https://")) {
+    const res = await fetch(source);
+    if (!res.ok) {
+      throw new Error(`Failed to fetch API: ${res.status}`);
+    }
+    return res.json();
+  }
 
-function ensure(dir) {
+  return JSON.parse(await readFile(source, "utf8"));
+}
+
+// const api = await loadApi("./scripts/api.json");
+const api = await loadApi("https://api.zenerp.app.br/api/schema.json");
+
+function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
 }
 
-ensure(OUT_DIR);
+ensureDir(OUT_DIR);
 
 /* ================= helpers ================= */
 
@@ -33,18 +46,29 @@ function write(file, content) {
   fs.writeFileSync(file, content.trim() + "\n");
 }
 
-function defaultForType(type) {
+function defaultForN8nType(type) {
   switch (type) {
+    case "string":
+      return "";
+
     case "number":
-    case "integer":
       return 0;
+
     case "boolean":
       return false;
+
     case "json":
-    case "object":
       return {};
+
+    case "options":
+      return undefined;
+
+    case "collection":
+    case "fixedCollection":
+      return {};
+
     default:
-      return "";
+      throw new Error(`Unsupported n8n type: ${type}`);
   }
 }
 
@@ -98,7 +122,7 @@ export function generateN8nOperationFields(openapi, operation) {
           displayName: p.name,
           name: p.name,
           type,
-          default: defaultForType(type),
+          default: defaultForN8nType(type),
           // required: true,
         };
       }),
@@ -126,7 +150,7 @@ export function generateN8nOperationFields(openapi, operation) {
           displayName: p.name,
           name: p.name,
           type,
-          default: defaultForType(type),
+          default: defaultForN8nType(type),
           // required: !!p.required,
         };
       }),
@@ -157,7 +181,7 @@ export function generateN8nOperationFields(openapi, operation) {
             displayName: name,
             name,
             type,
-            default: defaultForType(type),
+            default: defaultForN8nType(type),
             // required: required.has(name),
           };
         })
@@ -252,7 +276,7 @@ import {
   resolveRequestBody,
   resolveQueryParams,
   resolvePathParams,
-} from '../helpers/resolveParams';
+} from './helpers';
 
 export const operations: Record<string, Record<string, (this: IExecuteFunctions, i: number) => Promise<INodeExecutionData[]>>> = {
 ${moduleList.map(mod => `
