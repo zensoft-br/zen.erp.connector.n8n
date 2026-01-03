@@ -5,9 +5,7 @@ import path from "path";
 /* ================= config ================= */
 
 const OUT_DIR = "./nodes/ZenErp";
-const NODE_CLASS = "ZenErp";
 const NODE_NAME = "zenErp";
-const REQUEST_IMPORT = "../../transport/request";
 
 async function loadApi(source) {
   if (source.startsWith("http://") || source.startsWith("https://")) {
@@ -21,8 +19,8 @@ async function loadApi(source) {
   return JSON.parse(await readFile(source, "utf8"));
 }
 
-// const api = await loadApi("./scripts/api.json");
-const api = await loadApi("https://api.zenerp.app.br/api/schema.json");
+const api = await loadApi("./scripts/schema.json");
+// const api = await loadApi("https://api.zenerp.app.br/api/schema.json");
 
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
@@ -83,6 +81,25 @@ function resolveSchema(openapi, schema) {
     return openapi.components?.schemas?.[ref] ?? null;
   }
   return schema;
+}
+
+function resolveSecurityFlags(operation) {
+  const sec = operation.security;
+  if (!sec || !sec.length) {
+    return { auth: false, tenant: false };
+  }
+
+  // OR rule
+  if (sec.length > 1) {
+    throw new Error('OR security rules not supported');
+  }
+
+  // AND rule
+  const rule = sec[0];
+  return {
+    auth: !!rule.Auth,
+    tenant: !!rule.Tenant,
+  };
 }
 
 /* ================= fields generator ================= */
@@ -254,6 +271,8 @@ for (const [rawPath, methods] of Object.entries(api.paths ?? {})) {
       });
     }
 
+    const security = resolveSecurityFlags(def);
+
     modules.get(tag).endpoints.push({
       path: rawPath,
       method: httpMethod.toUpperCase(),
@@ -261,6 +280,7 @@ for (const [rawPath, methods] of Object.entries(api.paths ?? {})) {
       opName: camelCase(def.operationId.split("/").pop()),
       parameters: def.parameters ?? [],
       requestBody: def.requestBody,
+      security,
     });
   }
 }
@@ -271,60 +291,23 @@ const moduleList = [...modules.values()];
 
 const operationsTs = `
 import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
-import { request } from '${REQUEST_IMPORT}';
-import {
-  resolveRequestBody,
-  resolveQueryParams,
-  resolvePathParams,
-} from './helpers';
+import { createHandler } from './helpers';
 
 export const operations: Record<string, Record<string, (this: IExecuteFunctions, i: number) => Promise<INodeExecutionData[]>>> = {
-${moduleList.map(mod => `
-  "${mod.key}": {
-${mod.endpoints.map(ep => {
+${moduleList.map(mod => `  "${mod.key}": {${mod.endpoints.map(ep => {
   const prefix = operationIdToParamPrefix(ep.operationId);
-  const pathExpr = ep.path.replace(/\{(\w+)\}/g, (_, p) => `\${pathParams.${p}}`);
-
-  const resolvers = [];
-
-  // sempre existe
-  resolvers.push(`const opId = '${prefix}';`);
-
-  // path params só se existirem no path
-  if (/\{(\w+)\}/.test(ep.path)) {
-    resolvers.push(
-      `const pathParams = resolvePathParams(this, i, opId);`,
-    );
-  }
-
-  // query params (sempre seguro chamar)
-  resolvers.push(
-    `const qs = resolveQueryParams(this, i, opId);`,
-  );
-
-  // headers (sempre seguro chamar)
-  // resolvers.push(
-  //   `const headers = resolveHeaders(this, i, opId);`,
-  // );
-
-  // body só se a operação tiver requestBody
-  if (ep.requestBody) {
-    resolvers.push(
-      `const body = resolveRequestBody(this, i, opId);`,
-    );
-  }
 
   return `
-    "${ep.operationId}": async function (this: IExecuteFunctions, i: number) {
-      ${resolvers.join("\n      ")}      
-
-      return request.call(this, {
-        method: "${ep.method}",
-        path: \`${pathExpr}\`,
-        qs,
-        ${ep.requestBody ? "body," : ""}
-      });
-    }`;
+    "${ep.operationId}": createHandler({
+      operationId: "${ep.operationId}",
+      method: "${ep.method}",
+      path: "${ep.path}",
+      hasBody: ${!!ep.requestBody},
+      security: {
+        auth: ${ep.security.auth},
+        tenant: ${ep.security.tenant},
+      },
+    })`;
 }).join(",")}
   }`
 ).join(",")}
@@ -339,8 +322,8 @@ const fields = [];
 
 /* module + operation */
 fields.push({
-  displayName: "Module",
-  name: "module",
+  displayName: "Resource",
+  name: "resource",
   type: "options",
   options: moduleList.map(m => ({ name: m.label, value: m.key })),
   default: moduleList[0].key,
@@ -351,7 +334,7 @@ for (const mod of moduleList) {
     displayName: "Operation",
     name: "operation",
     type: "options",
-    displayOptions: { show: { module: [mod.key] } },
+    displayOptions: { show: { resource: [mod.key] } },
     options: mod.endpoints.map(e => ({
       name: titleCase(e.opName),
       value: e.operationId,
@@ -368,58 +351,5 @@ write(
   path.join(OUT_DIR, `${NODE_NAME}.fields.json`),
   JSON.stringify(fields, null, 2),
 );
-
-/* ================= node.ts ================= */
-
-const nodeTs = `
-import type { IExecuteFunctions, INodeType, INodeTypeDescription } from 'n8n-workflow';
-import { NodeOperationError } from 'n8n-workflow';
-import { operations } from './${NODE_NAME}.operations';
-import { properties } from './${NODE_NAME}.fields';
-
-export class ${NODE_CLASS} implements INodeType {
-  description: INodeTypeDescription = {
-    displayName: 'Zen ERP',
-    description: 'Zen ERP connector node',
-    name: '${NODE_NAME}',
-    icon: 'file:zenErp.svg',
-    group: ['transform'],
-    version: 1,
-    usableAsTool: true,
-    defaults: { name: 'Zen ERP' },
-    inputs: ['main'],
-    outputs: ['main'],
-    credentials: [{ name: 'zenApi', required: true }],
-    properties,
-  };
-
-  async execute(this: IExecuteFunctions) {
-    const items = this.getInputData();
-    const out = [];
-
-    for (let i = 0; i < items.length; i++) {
-      const module = this.getNodeParameter('module', i) as string;
-      const operation = this.getNodeParameter('operation', i) as string;
-      const fn = operations[module]?.[operation];
-
-      if (!fn) {
-        throw new NodeOperationError(
-          this.getNode(),
-          \`Invalid operation: \${module} / \${operation}\`,
-          { itemIndex: i },
-        );
-      }
-
-      const res = await fn.call(this, i);
-      if (Array.isArray(res)) out.push(...res);
-      else if (res) out.push(res);
-    }
-
-    return [out];
-  }
-}
-`;
-
-write(path.join(OUT_DIR, `${NODE_CLASS}.node.ts`), nodeTs);
 
 console.log("✔ Generator refatorado usando generateN8nOperationFields");

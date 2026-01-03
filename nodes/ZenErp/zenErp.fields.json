@@ -1,7 +1,7 @@
 [
   {
-    "displayName": "Module",
-    "name": "module",
+    "displayName": "Resource",
+    "name": "resource",
     "type": "options",
     "options": [
       {
@@ -177,7 +177,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "auth"
         ]
       }
@@ -461,7 +461,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "catalog"
         ]
       }
@@ -779,7 +779,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "catalog/company"
         ]
       }
@@ -1561,7 +1561,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "catalog/location"
         ]
       }
@@ -2658,7 +2658,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "catalog/person"
         ]
       }
@@ -4975,7 +4975,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "catalog/product"
         ]
       }
@@ -8592,7 +8592,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "commercial/contract"
         ]
       }
@@ -10885,7 +10885,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "commercial"
         ]
       }
@@ -11904,7 +11904,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "commercial/target"
         ]
       }
@@ -13131,7 +13131,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "financial/accounting"
         ]
       }
@@ -17517,7 +17517,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "financial/billing"
         ]
       }
@@ -19452,7 +19452,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "financial/credit"
         ]
       }
@@ -20073,7 +20073,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "financial"
         ]
       }
@@ -22850,7 +22850,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "financial/salesCommission"
         ]
       }
@@ -23672,7 +23672,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "financial/treasury"
         ]
       }
@@ -24704,7 +24704,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "fiscal/br"
         ]
       }
@@ -26500,7 +26500,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "fiscal"
         ]
       }
@@ -31997,7 +31997,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "fiscal/taxation"
         ]
       }
@@ -33466,7 +33466,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "logistic"
         ]
       }
@@ -34088,7 +34088,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "material"
         ]
       }
@@ -46629,7 +46629,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "sale"
         ]
       }
@@ -52793,7 +52793,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "shipping"
         ]
       }
@@ -53647,7 +53647,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "supply/production"
         ]
       }
@@ -57773,7 +57773,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "supply/purchase"
         ]
       }
@@ -63197,7 +63197,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "system/audit"
         ]
       }
@@ -63863,7 +63863,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "system/automation"
         ]
       }
@@ -64925,7 +64925,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "system"
         ]
       }
@@ -65687,7 +65687,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "system/data"
         ]
       }
@@ -66586,7 +66586,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "system/file"
         ]
       }
@@ -66989,7 +66989,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "system/frontend"
         ]
       }
@@ -67220,7 +67220,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "system/image"
         ]
       }
@@ -67610,7 +67610,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "system/info"
         ]
       }
@@ -67633,7 +67633,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "system/integration"
         ]
       }
@@ -69165,7 +69165,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "system/job"
         ]
       }
@@ -69273,7 +69273,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "system/mail"
         ]
       }
@@ -69735,7 +69735,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "system/printing"
         ]
       }
@@ -70469,7 +70469,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "system/report"
         ]
       }
@@ -71225,7 +71225,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "system/security"
         ]
       }
@@ -74576,7 +74576,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "system/storage"
         ]
       }
@@ -75093,7 +75093,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "system/workflow"
         ]
       }
@@ -76512,7 +76512,7 @@
     "type": "options",
     "displayOptions": {
       "show": {
-        "module": [
+        "resource": [
           "trade"
         ]
       }

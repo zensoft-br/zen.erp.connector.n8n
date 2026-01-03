@@ -1,6 +1,11 @@
 import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
+import { request } from '../../transport/request';
 
-export function resolveRequestBody(
+function operationIdToParamPrefix(operationId: string): string {
+    return operationId.replace(/^\/+/, "").replace(/\//g, "_");
+}
+
+function resolveRequestBody(
     ctx: IExecuteFunctions,
     itemIndex: number,
     opId: string,
@@ -19,17 +24,23 @@ export function resolveRequestBody(
             {},
         ) as IDataObject;
 
-        return (wrapper?.json as IDataObject) ?? {};
+        const json = (wrapper?.json as IDataObject) ?? {};
+
+        // 🔒 remove referências internas do n8n
+        return JSON.parse(JSON.stringify(json));
     }
 
-    return ctx.getNodeParameter(
+    const fields = ctx.getNodeParameter(
         `${opId}_body`,
         itemIndex,
         {},
     ) as IDataObject;
+
+    // 🔒 remove referências internas do n8n
+    return JSON.parse(JSON.stringify(fields));
 }
 
-export function resolvePathParams(
+function resolvePathParams(
     ctx: IExecuteFunctions,
     itemIndex: number,
     opId: string,
@@ -42,7 +53,7 @@ export function resolvePathParams(
     ) as IDataObject;
 }
 
-export function resolveQueryParams(
+function resolveQueryParams(
     ctx: IExecuteFunctions,
     itemIndex: number,
     opId: string,
@@ -65,44 +76,63 @@ export function resolveQueryParams(
     return qs;
 }
 
-export function resolveHeaders(
-    ctx: IExecuteFunctions,
-    itemIndex: number,
-    opId: string,
-): Record<string, string> {
+// export function resolveHeaders(
+//     ctx: IExecuteFunctions,
+//     itemIndex: number,
+//     opId: string,
+// ): Record<string, string> {
 
-    const raw = ctx.getNodeParameter(
-        `${opId}_headers`,
-        itemIndex,
-        {},
-    ) as IDataObject;
+//     const raw = ctx.getNodeParameter(
+//         `${opId}_headers`,
+//         itemIndex,
+//         {},
+//     ) as IDataObject;
 
-    const headers: Record<string, string> = {};
+//     const headers: Record<string, string> = {};
 
-    for (const [k, v] of Object.entries(raw)) {
-        if (v !== undefined && v !== null && v !== '') {
-            headers[k] = String(v);
-        }
-    }
+//     for (const [k, v] of Object.entries(raw)) {
+//         if (v !== undefined && v !== null && v !== '') {
+//             headers[k] = String(v);
+//         }
+//     }
 
-    return headers;
+//     return headers;
+// }
+
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+type SecurityMeta = {
+    auth: boolean;
+    tenant: boolean;
+};
+
+type OperationMeta = {
+    operationId: string;
+    method: HttpMethod;
+    path: string;
+    hasBody: boolean;
+    security: SecurityMeta;
+};
+
+export function createHandler(op: OperationMeta) {
+    return async function (
+        this: IExecuteFunctions,
+        i: number,
+    ): Promise<INodeExecutionData[]> {
+        return executeOperation.call(this, i, op);
+    };
 }
 
 async function executeOperation(
     this: IExecuteFunctions,
     i: number,
-    op: {
-        operationId: string;
-        method: string;
-        path: string;
-        hasBody: boolean;
-    }
+    op: OperationMeta,
 ): Promise<INodeExecutionData[]> {
     const opId = operationIdToParamPrefix(op.operationId);
 
     const pathParams = /\{/.test(op.path)
         ? resolvePathParams(this, i, opId)
-        : undefined;
+        : {};
 
     const qs = resolveQueryParams(this, i, opId);
 
@@ -112,7 +142,13 @@ async function executeOperation(
 
     const path = op.path.replace(
         /\{(\w+)\}/g,
-        (_, p) => pathParams?.[p],
+        (_, p: string) => {
+            const value = (pathParams as Record<string, unknown>)[p];
+            if (value == null) {
+                throw new Error(`Missing path param: ${p}`);
+            }
+            return String(value);
+        },
     );
 
     return request.call(this, {
@@ -120,15 +156,6 @@ async function executeOperation(
         path,
         qs,
         ...(op.hasBody ? { body } : {}),
-    });
-}
-
-function createHandler(op) {
-    return async function (this: IExecuteFunctions, i: number) {
-        return executeOperation.call(this, i, op);
-    };
-}
-
-function operationIdToParamPrefix(operationId: string): string {
-    return operationId.replace(/^\/+/, "").replace(/\//g, "_");
+        security: op.security,
+    }) as Promise<INodeExecutionData[]>;
 }

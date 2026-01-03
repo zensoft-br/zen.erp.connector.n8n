@@ -18,7 +18,7 @@ export class ZenApi implements ICredentialType {
 			name: 'baseUrl',
 			type: 'string',
 			default: 'https://api.zenerp.app.br',
-			required: false,
+			required: true,
 		},
 		{
 			displayName: 'Tenant',
@@ -36,7 +36,7 @@ export class ZenApi implements ICredentialType {
 				password: true
 			},
 			default: '',
-			required: true,
+			required: false,
 		},
 	];
 

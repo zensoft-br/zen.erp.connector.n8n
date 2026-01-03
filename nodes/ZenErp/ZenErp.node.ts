@@ -1,7 +1,7 @@
 import type { IExecuteFunctions, INodeType, INodeTypeDescription } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
-import { operations } from './zenErp.operations';
 import { properties } from './zenErp.fields';
+import { operations } from './zenErp.operations';
 
 export class ZenErp implements INodeType {
   description: INodeTypeDescription = {
@@ -12,10 +12,15 @@ export class ZenErp implements INodeType {
     group: ['transform'],
     version: 1,
     usableAsTool: true,
-    defaults: { name: 'Zen ERP' },
+    defaults: {
+      name: 'Zen ERP'
+    },
     inputs: ['main'],
     outputs: ['main'],
-    credentials: [{ name: 'zenApi', required: true }],
+    credentials: [{
+      name: 'zenApi',
+      required: true
+    }],
     properties,
   };
 
@@ -24,14 +29,14 @@ export class ZenErp implements INodeType {
     const out = [];
 
     for (let i = 0; i < items.length; i++) {
-      const module = this.getNodeParameter('module', i) as string;
+      const resource = this.getNodeParameter('resource', i) as string;
       const operation = this.getNodeParameter('operation', i) as string;
-      const fn = operations[module]?.[operation];
+      const fn = operations[resource]?.[operation];
 
       if (!fn) {
         throw new NodeOperationError(
           this.getNode(),
-          `Invalid operation: ${module} / ${operation}`,
+          `Invalid operation: ${resource} / ${operation}`,
           { itemIndex: i },
         );
       }
