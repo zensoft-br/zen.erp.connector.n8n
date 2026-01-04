@@ -16,8 +16,8 @@ async function loadApi(source) {
   return JSON.parse(await readFile(source, "utf8"));
 }
 
-const api = await loadApi("../zen.erp.ws/src/main/webapp/api/schema.json");
-// const api = await loadApi("https://api.zenerp.app.br/api/schema.json");
+const api = await loadApi("../zen.erp.ws/src/main/webapp/platform/openapi.json");
+// const api = await loadApi("https://api.zenerp.app.br/platform/openapi.json");
 
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });

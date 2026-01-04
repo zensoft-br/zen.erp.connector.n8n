@@ -26,7 +26,7 @@ Operations are generated directly from the Zen ERP OpenAPI definition and organi
 This ensures that all current and future API endpoints are automatically available without requiring manual updates to the node documentation.
 
 For the complete and up-to-date API reference, see:
-https://api.zenerp.app.br/api
+https://api.zenerp.app.br/platform/openapi
 
 ## Credentials
 
@@ -70,5 +70,5 @@ https://docs.n8n.io/try-it-out
 
 - [Zen ERP website](https://zenerp.com.br)
 - [Zen ERP documentation](https://docs.zenerp.com.br)
-- [Zen ERP API documentation](https://api.zenerp.app.br/api)
+- [Zen ERP API documentation](https://api.zenerp.app.br/platform/openapi)
 - [n8n community nodes documentation](https://docs.n8n.io/integrations/#community-nodes)
