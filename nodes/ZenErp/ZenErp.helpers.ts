@@ -1,13 +1,28 @@
-import type { IDataObject } from 'n8n-workflow';
-import { IExecuteFunctions, INodeExecutionData } from "n8n-workflow";
-import { request } from '../../transport/request';
+import { IDataObject, IExecuteFunctions, INodeExecutionData } from "n8n-workflow";
 
-export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
-export type OperationSecurity = {
+type HttpError = {
+    message?: string;
+    response?: {
+        status?: number;
+        data?: unknown;
+    };
+};
+
+type OperationSecurity = {
     auth: boolean;
     tenant: boolean;
 };
+
+interface RequestOptions {
+    method: HttpMethod;
+    path: string;
+    qs?: Record<string, string>;
+    body?: IDataObject | IDataObject[] | Buffer | string;
+    headers?: Record<string, string>;
+    security?: OperationSecurity;
+}
 
 export type OperationMeta = {
     operationId: string;
@@ -19,6 +34,14 @@ export type OperationMeta = {
 
 export type OperationHandler = (this: IExecuteFunctions, i: number) => Promise<INodeExecutionData[]>;
 
+export function createHandler(op: OperationMeta) {
+    return async function (
+        this: IExecuteFunctions,
+        i: number,
+    ): Promise<INodeExecutionData[]> {
+        return executeOperation.call(this, i, op);
+    };
+}
 
 function operationIdToParamPrefix(operationId: string): string {
     return operationId.replace(/^\/+/, "").replace(/\//g, "_");
@@ -29,34 +52,26 @@ function resolveRequestBody(
     itemIndex: number,
     opId: string,
 ): IDataObject | undefined {
-
-    const format = ctx.getNodeParameter(
-        `${opId}_bodyFormat`,
-        itemIndex,
-        'fields',
-    ) as string;
-
-    if (format === 'json') {
-        const wrapper = ctx.getNodeParameter(
-            `${opId}_bodyJson`,
-            itemIndex,
-            {},
-        ) as IDataObject;
-
-        const json = (wrapper?.json as IDataObject) ?? {};
-
-        // 🔒 remove referências internas do n8n
-        return JSON.parse(JSON.stringify(json));
-    }
-
-    const fields = ctx.getNodeParameter(
-        `${opId}_body`,
+    const raw = ctx.getNodeParameter(
+        `${opId}_bodyJson.json`,
         itemIndex,
         {},
-    ) as IDataObject;
+    );
 
-    // 🔒 remove referências internas do n8n
-    return JSON.parse(JSON.stringify(fields));
+    if (raw == null) {
+        return undefined;
+    }
+
+    // 🔥 n8n retorna STRING para type: "json"
+    if (typeof raw === 'string') {
+        try {
+            return JSON.parse(raw);
+        } catch {
+            throw new Error('Invalid JSON in request body');
+        }
+    }
+
+    return JSON.parse(JSON.stringify(raw));
 }
 
 function resolvePathParams(
@@ -95,15 +110,6 @@ function resolveQueryParams(
     return qs;
 }
 
-export function createHandler(op: OperationMeta) {
-    return async function (
-        this: IExecuteFunctions,
-        i: number,
-    ): Promise<INodeExecutionData[]> {
-        return executeOperation.call(this, i, op);
-    };
-}
-
 async function executeOperation(
     this: IExecuteFunctions,
     i: number,
@@ -118,8 +124,10 @@ async function executeOperation(
     const qs = resolveQueryParams(this, i, opId);
 
     const body = op.hasBody
-        ? resolveRequestBody(this, i, opId)
+        ? resolveRequestBody(this, i, opId) ?? {}
         : undefined;
+
+    const hasBody = body != null;
 
     const path = op.path.replace(
         /\{(\w+)\}/g,
@@ -132,11 +140,102 @@ async function executeOperation(
         },
     );
 
-    return request.call(this, {
+    let req: RequestOptions = {
         method: op.method,
         path,
         qs,
-        ...(op.hasBody ? { body } : {}),
         security: op.security,
-    }) as Promise<INodeExecutionData[]>;
+    };
+
+    if (hasBody) {
+        req = {
+            ...req,
+            body,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        }
+    }
+
+    return request.call(this, req) as Promise<INodeExecutionData[]>;
+}
+
+function isHttpError(err: unknown): err is HttpError {
+    return (
+        typeof err === 'object' &&
+        err !== null &&
+        'response' in err
+    );
+}
+
+async function request(
+    this: IExecuteFunctions,
+    options: RequestOptions,
+): Promise<INodeExecutionData[]> {
+    const credentials = await this.getCredentials('zenApi');
+
+    if (!credentials) {
+        throw new Error('Zen API credentials not found');
+    }
+
+    const baseUrl = credentials.baseUrl as string;
+
+    const headers: Record<string, string> = {
+        ...(options.headers ?? {}),
+    };
+
+    const sec = options.security;
+    if (sec?.auth || sec?.tenant) {
+        if (sec.auth) {
+            const token = credentials.token as string | undefined;
+            if (!token) {
+                throw new Error('Missing auth token');
+            }
+            headers.Authorization = `Bearer ${token}`;
+        }
+
+        if (sec.tenant) {
+            const tenant = credentials.tenant as string | undefined;
+            if (!tenant) {
+                throw new Error('Missing tenant');
+            }
+            headers.tenant = tenant;
+        }
+    }
+
+    try {
+        const response = await this.helpers.httpRequest({
+            url: baseUrl + options.path,
+            method: options.method,
+            headers,
+            qs: options.qs,
+            body: options.body,
+            json: !!options.body,
+        });
+
+        const safeResponse = JSON.parse(JSON.stringify(response));
+
+        if (Array.isArray(safeResponse)) {
+            return safeResponse.map(item => ({ json: item }));
+        }
+
+        return [{ json: safeResponse }];
+    } catch (err: unknown) {
+        if (isHttpError(err) && err.response?.data !== undefined) {
+            const safeError = JSON.parse(JSON.stringify(err.response.data));
+
+            throw new Error(
+                `HTTP ${err.response?.status}: ${typeof safeError === 'string'
+                    ? safeError
+                    : JSON.stringify(safeError)
+                }`
+            );
+        }
+
+        if (err instanceof Error) {
+            throw new Error(err.message);
+        }
+
+        throw new Error('Request failed');
+    }
 }

@@ -175,64 +175,14 @@ function generateN8nOperationFields(openapi, operation) {
       operation.requestBody.content?.["application/json"]?.schema
     );
 
-    const required = new Set(schema?.required || []);
-    const bodyFields =
-      schema?.type === "object"
-        ? Object.entries(schema.properties || {}).map(([name, prop]) => {
-          const type =
-            prop.type === "integer" || prop.type === "number"
-              ? "number"
-              : prop.type === "boolean"
-                ? "boolean"
-                : prop.type === "object"
-                  ? "json"
-                  : "string";
-
-          return {
-            displayName: name,
-            name,
-            type,
-            default: defaultForN8nType(type),
-            // required: required.has(name),
-          };
-        })
-        : [];
-
-    result.push({
-      displayName: "Body format",
-      name: `${prefix}_bodyFormat`,
-      type: "options",
-      default: "fields",
-      displayOptions: { show: { operation: [operation.operationId] } },
-      options: [
-        { name: "Fields", value: "fields" },
-        { name: "JSON", value: "json" },
-      ],
-    });
-
     result.push({
       displayName: "Body",
-      name: `${prefix}_body`,
-      type: "collection",
-      default: {},
-      displayOptions: {
-        show: {
-          operation: [operation.operationId],
-          [`${prefix}_bodyFormat`]: ["fields"],
-        },
-      },
-      options: bodyFields,
-    });
-
-    result.push({
-      displayName: "Body (JSON)",
       name: `${prefix}_bodyJson`,
       type: "collection",
       default: {},
       displayOptions: {
         show: {
           operation: [operation.operationId],
-          [`${prefix}_bodyFormat`]: ["json"],
         },
       },
       options: [
@@ -240,13 +190,78 @@ function generateN8nOperationFields(openapi, operation) {
           displayName: "JSON",
           name: "json",
           type: "json",
-          default: {},
+          default: JSON.stringify(defaultJsonFromSchema(schema), null, 2),
         },
       ],
     });
   }
 
   return result;
+}
+
+function defaultJsonFromSchema(schema) {
+  if (!schema || schema.type !== "object") return {};
+
+  const requiredSet = new Set(schema.required || []);
+  const result = {};
+
+  for (const [key, prop] of Object.entries(schema.properties || {})) {
+    result[key] = defaultValueForProp(prop, requiredSet.has(key));
+  }
+
+  return result;
+}
+
+function defaultValueForProp(prop, required) {
+  const mark = required ? "*" : "";
+
+  // referência: não expande
+  if (prop.$ref) {
+    return `<object${mark}>`;
+  }
+
+  // format tem prioridade
+  if (prop.format) {
+    switch (prop.format) {
+      case "date":
+        return `<date${mark}>`;
+
+      case "date-time":
+        return `<date-time${mark}>`;
+
+      case "email":
+        return `<email${mark}>`;
+
+      case "uuid":
+        return `<uuid${mark}>`;
+
+      case "uri":
+        return `<uri${mark}>`;
+    }
+  }
+
+  switch (prop.type) {
+    case "string":
+      return `<string${mark}>`;
+
+    case "integer":
+      return `<integer${mark}>`;
+
+    case "number":
+      return `<number${mark}>`;
+
+    case "boolean":
+      return `<boolean${mark}>`;
+
+    case "array":
+      return `<array${mark}>`;
+
+    case "object":
+      return `<object${mark}>`;
+
+    default:
+      return `<any${mark}>`;
+  }
 }
 
 const resources = new Map();
