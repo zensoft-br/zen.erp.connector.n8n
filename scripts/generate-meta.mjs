@@ -275,11 +275,12 @@ function resolveOperationResponse(openapi, operation) {
 
   if (!successCode) return null;
 
-  const content = successCode.content?.["application/json"];
+  const contentType = Object.keys(successCode.content || {})[0];
+  const content = successCode.content?.[contentType];
   if (!content?.schema) return null;
 
   return {
-    mediaType: "application/json",
+    mediaType: contentType,
     schema: resolveSchema(openapi, content.schema),
   };
 }

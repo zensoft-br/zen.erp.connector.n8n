@@ -5894,7 +5894,7 @@
       "method": "POST",
       "path": "/fiscal/br/dfeNfeProcOutOpDownload",
       "hasBody": true,
-      "responseType": "application/json",
+      "responseType": "application/zip",
       "security": {
         "auth": true,
         "tenant": true
@@ -12648,7 +12648,7 @@
       "method": "POST",
       "path": "/system/file/fileOpReadContent/{id}",
       "hasBody": false,
-      "responseType": "application/json",
+      "responseType": "application/octet-stream",
       "security": {
         "auth": true,
         "tenant": true
@@ -12819,7 +12819,7 @@
       "method": "GET",
       "path": "/system/info/health",
       "hasBody": false,
-      "responseType": "application/json",
+      "responseType": "text/plain",
       "security": {
         "auth": false,
         "tenant": true
@@ -12830,7 +12830,7 @@
       "method": "GET",
       "path": "/system/info/metrics",
       "hasBody": false,
-      "responseType": "application/json",
+      "responseType": "text/plain",
       "security": {
         "auth": false,
         "tenant": true
@@ -13430,7 +13430,7 @@
       "method": "POST",
       "path": "/system/report/reportOpGenerate",
       "hasBody": true,
-      "responseType": "application/json",
+      "responseType": "application/pdf",
       "security": {
         "auth": true,
         "tenant": true
