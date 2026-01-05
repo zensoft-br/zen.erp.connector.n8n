@@ -8,7 +8,7 @@ import type {
 
 export class ZenApi implements ICredentialType {
 	name = 'zenApi';
-	displayName = 'Zen API';
+	displayName = 'Zen ERP API';
 	icon: IconFile = 'file:zenApi.svg';
 	documentationUrl = 'https://docs.zenerp.com.br/';
 

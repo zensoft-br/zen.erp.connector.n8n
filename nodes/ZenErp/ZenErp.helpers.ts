@@ -30,6 +30,7 @@ export type OperationMeta = {
     path: string;
     hasBody: boolean;
     security: OperationSecurity;
+    responseType?: string;
 };
 
 export type OperationHandler = (this: IExecuteFunctions, i: number) => Promise<INodeExecutionData[]>;
@@ -147,11 +148,19 @@ async function executeOperation(
         security: op.security,
     };
 
+    if (op.responseType) {
+        req.headers = {
+            ...req.headers,
+            'Accept': op.responseType,
+        };
+    }
+
     if (hasBody) {
         req = {
             ...req,
             body,
             headers: {
+                ...req.headers,
                 'Content-Type': 'application/json',
             },
         }

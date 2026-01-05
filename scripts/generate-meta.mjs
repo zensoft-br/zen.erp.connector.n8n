@@ -264,6 +264,26 @@ function defaultValueForProp(prop, required) {
   }
 }
 
+function resolveOperationResponse(openapi, operation) {
+  if (!operation.responses) return null;
+
+  const successCode =
+    operation.responses["200"]
+    || operation.responses["201"]
+    || operation.responses["204"]
+    || Object.values(operation.responses)[0];
+
+  if (!successCode) return null;
+
+  const content = successCode.content?.["application/json"];
+  if (!content?.schema) return null;
+
+  return {
+    mediaType: "application/json",
+    schema: resolveSchema(openapi, content.schema),
+  };
+}
+
 const resources = new Map();
 
 for (const [rawPath, methods] of Object.entries(api.paths ?? {})) {
@@ -280,6 +300,8 @@ for (const [rawPath, methods] of Object.entries(api.paths ?? {})) {
 
     const security = resolveSecurityFlags(def);
 
+    const response = resolveOperationResponse(api, def);
+
     resources.get(tag).endpoints.push({
       path: rawPath,
       method: httpMethod.toUpperCase(),
@@ -287,6 +309,7 @@ for (const [rawPath, methods] of Object.entries(api.paths ?? {})) {
       opName: camelCase(def.operationId.split("/").pop()),
       parameters: def.parameters ?? [],
       requestBody: def.requestBody,
+      response: response?.mediaType,
       security,
     });
   }
@@ -302,15 +325,17 @@ const metaOperation = {};
 for (const resource of resourceList) {
   const resourceObj = (metaOperation[resource.key] = {});
   for (const operation of resource.endpoints) {
+
     resourceObj[operation.operationId] = {
       operationId: operation.operationId,
       method: operation.method,
       path: operation.path,
       hasBody: !!operation.requestBody,
+      responseType: operation.response,
       security: {
         auth: operation.security.auth,
         tenant: operation.security.tenant
-      }
+      },
     }
   }
 }
@@ -351,3 +376,4 @@ for (const resource of resourceList) {
 write(path.join(OUT_DIR, `ZenErp.meta.fields.json`), JSON.stringify(metaFields, null, 2));
 
 console.log("✔ Generator executed successfully");
+
