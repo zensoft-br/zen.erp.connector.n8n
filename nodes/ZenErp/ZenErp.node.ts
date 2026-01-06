@@ -1,4 +1,4 @@
-import type { IExecuteFunctions, INodeProperties, INodeType, INodeTypeDescription } from 'n8n-workflow';
+import type { IExecuteFunctions, INodeExecutionData, INodeProperties, INodeType, INodeTypeDescription } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 import { createHandler, OperationHandler, OperationMeta } from './ZenErp.helpers';
 import rawFields from './ZenErp.meta.fields.json';
@@ -20,7 +20,8 @@ export class ZenErp implements INodeType {
       name: 'Zen ERP'
     },
     inputs: ['main'],
-    outputs: ['main'],
+    outputs: ['main', 'main'],
+    outputNames: ['success', 'error'],
     credentials: [{
       name: 'zenApi',
       required: true
@@ -30,14 +31,39 @@ export class ZenErp implements INodeType {
 
   async execute(this: IExecuteFunctions) {
     const items = this.getInputData();
-    const out = [];
+
+    const success: INodeExecutionData[] = [];
+    const error: INodeExecutionData[] = [];
+
+    const normalizeResult = (
+      res: unknown,
+      itemIndex: number,
+    ): INodeExecutionData[] => {
+      if (!res) {
+        return [{
+          json: items[itemIndex].json,
+          pairedItem: { item: itemIndex },
+        }];
+      }
+
+      if (Array.isArray(res)) {
+        return res.map(r => ({
+          ...(r as INodeExecutionData),
+          pairedItem: { item: itemIndex },
+        }));
+      }
+
+      return [{
+        ...(res as INodeExecutionData),
+        pairedItem: { item: itemIndex },
+      }];
+    };
 
     for (let i = 0; i < items.length; i++) {
       const resource = this.getNodeParameter('resource', i) as string;
       const operation = this.getNodeParameter('operation', i) as string;
 
       const target = operations[resource]?.[operation];
-
       if (!target) {
         throw new NodeOperationError(
           this.getNode(),
@@ -48,15 +74,26 @@ export class ZenErp implements INodeType {
 
       const fn = getOperationHandler(target);
 
-      const res = await fn.call(this, i);
+      try {
+        const res = await fn.call(this, i);
+        success.push(...normalizeResult(res, i));
+      } catch (e: unknown) {
+        const message = e instanceof Error
+          ? e.message
+          : 'Operation failed';
 
-      if (Array.isArray(res)) out.push(...res);
-      else if (res) out.push(res);
+        error.push({
+          json: {
+            ...items[i].json,
+            _error: { message },
+          },
+          pairedItem: { item: i },
+        });
+      }
     }
 
-    return [out];
+    return [success, error];
   }
-
 }
 
 const handlerCache = new Map<string, OperationHandler>();
