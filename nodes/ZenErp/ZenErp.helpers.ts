@@ -1,14 +1,6 @@
-import { IDataObject, IExecuteFunctions, INodeExecutionData } from "n8n-workflow";
+import { IDataObject, IExecuteFunctions, NodeApiError, NodeOperationError } from "n8n-workflow";
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-
-type HttpError = {
-    message?: string;
-    response?: {
-        status?: number;
-        data?: unknown;
-    };
-};
 
 type OperationSecurity = {
     auth: boolean;
@@ -22,6 +14,7 @@ interface RequestOptions {
     body?: IDataObject | IDataObject[] | Buffer | string;
     headers?: Record<string, string>;
     security?: OperationSecurity;
+    responseType?: string;
 }
 
 export type OperationMeta = {
@@ -33,13 +26,16 @@ export type OperationMeta = {
     responseType?: string;
 };
 
-export type OperationHandler = (this: IExecuteFunctions, i: number) => Promise<INodeExecutionData[]>;
+export type OperationHandler = (
+    this: IExecuteFunctions,
+    itemIndex: number,
+) => Promise<unknown | unknown[] | void>;
 
-export function createHandler(op: OperationMeta) {
+export function createHandler(op: OperationMeta): OperationHandler {
     return async function (
         this: IExecuteFunctions,
         i: number,
-    ): Promise<INodeExecutionData[]> {
+    ): Promise<unknown | unknown[] | void> {
         return executeOperation.call(this, i, op);
     };
 }
@@ -115,7 +111,7 @@ async function executeOperation(
     this: IExecuteFunctions,
     i: number,
     op: OperationMeta,
-): Promise<INodeExecutionData[]> {
+): Promise<unknown | unknown[] | void> {
     const opId = operationIdToParamPrefix(op.operationId);
 
     const pathParams = /\{/.test(op.path)
@@ -128,14 +124,16 @@ async function executeOperation(
         ? resolveRequestBody(this, i, opId) ?? {}
         : undefined;
 
-    const hasBody = body != null;
-
     const path = op.path.replace(
         /\{(\w+)\}/g,
         (_, p: string) => {
             const value = (pathParams as Record<string, unknown>)[p];
             if (value == null) {
-                throw new Error(`Missing path param: ${p}`);
+                throw new NodeOperationError(
+                    this.getNode(),
+                    `Missing path param: ${p}`,
+                    { itemIndex: i },
+                );
             }
             return String(value);
         },
@@ -155,7 +153,7 @@ async function executeOperation(
         };
     }
 
-    if (hasBody) {
+    if (body != null) {
         req = {
             ...req,
             body,
@@ -166,25 +164,17 @@ async function executeOperation(
         }
     }
 
-    return request.call(this, req) as Promise<INodeExecutionData[]>;
-}
-
-function isHttpError(err: unknown): err is HttpError {
-    return (
-        typeof err === 'object' &&
-        err !== null &&
-        'response' in err
-    );
+    return request.call(this, req);
 }
 
 async function request(
     this: IExecuteFunctions,
     options: RequestOptions,
-): Promise<INodeExecutionData[]> {
+): Promise<unknown | unknown[]> {
     const credentials = await this.getCredentials('zenApi');
 
     if (!credentials) {
-        throw new Error('Zen API credentials not found');
+        throw new NodeOperationError(this.getNode(), 'Zen API credentials not found');
     }
 
     const baseUrl = credentials.baseUrl as string;
@@ -194,57 +184,30 @@ async function request(
     };
 
     const sec = options.security;
-    if (sec?.auth || sec?.tenant) {
-        if (sec.auth) {
-            const token = credentials.token as string | undefined;
-            if (!token) {
-                throw new Error('Missing auth token');
-            }
-            headers.Authorization = `Bearer ${token}`;
+    if (sec?.auth) {
+        if (!credentials.token) {
+            throw new NodeOperationError(this.getNode(), 'Missing auth token');
         }
+        headers.Authorization = `Bearer ${credentials.token}`;
+    }
 
-        if (sec.tenant) {
-            const tenant = credentials.tenant as string | undefined;
-            if (!tenant) {
-                throw new Error('Missing tenant');
-            }
-            headers.tenant = tenant;
+    if (sec?.tenant) {
+        if (!credentials.tenant) {
+            throw new NodeOperationError(this.getNode(), 'Missing tenant');
         }
+        headers.tenant = String(credentials.tenant);
     }
 
     try {
-        const response = await this.helpers.httpRequest({
+        return await this.helpers.httpRequest({
             url: baseUrl + options.path,
             method: options.method,
             headers,
             qs: options.qs,
             body: options.body,
-            json: !!options.body,
+            json: options.body !== undefined,
         });
-
-        const safeResponse = JSON.parse(JSON.stringify(response));
-
-        if (Array.isArray(safeResponse)) {
-            return safeResponse.map(item => ({ json: item }));
-        }
-
-        return [{ json: safeResponse }];
-    } catch (err: unknown) {
-        if (isHttpError(err) && err.response?.data !== undefined) {
-            const safeError = JSON.parse(JSON.stringify(err.response.data));
-
-            throw new Error(
-                `HTTP ${err.response?.status}: ${typeof safeError === 'string'
-                    ? safeError
-                    : JSON.stringify(safeError)
-                }`
-            );
-        }
-
-        if (err instanceof Error) {
-            throw new Error(err.message);
-        }
-
-        throw new Error('Request failed');
+    } catch (err) {
+        throw new NodeApiError(this.getNode(), err);
     }
 }

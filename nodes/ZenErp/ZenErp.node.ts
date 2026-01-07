@@ -1,5 +1,5 @@
-import type { IExecuteFunctions, INodeExecutionData, INodeProperties, INodeType, INodeTypeDescription } from 'n8n-workflow';
-import { NodeOperationError } from 'n8n-workflow';
+import type { IExecuteFunctions, INodeExecutionData, INodeProperties, INodeType, INodeTypeDescription, JsonObject } from 'n8n-workflow';
+import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 import { createHandler, OperationHandler, OperationMeta } from './ZenErp.helpers';
 import rawFields from './ZenErp.meta.fields.json';
 import rawOperations from './ZenErp.meta.operations.json';
@@ -20,8 +20,7 @@ export class ZenErp implements INodeType {
       name: 'Zen ERP'
     },
     inputs: ['main'],
-    outputs: ['main', 'main'],
-    outputNames: ['success', 'error'],
+    outputs: ['main'],
     credentials: [{
       name: 'zenApi',
       required: true
@@ -29,70 +28,56 @@ export class ZenErp implements INodeType {
     properties: fields,
   };
 
-  async execute(this: IExecuteFunctions) {
+  async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
     const items = this.getInputData();
-
-    const success: INodeExecutionData[] = [];
-    const error: INodeExecutionData[] = [];
-
-    const normalizeResult = (
-      res: unknown,
-      itemIndex: number,
-    ): INodeExecutionData[] => {
-      if (!res) {
-        return [{
-          json: items[itemIndex].json,
-          pairedItem: { item: itemIndex },
-        }];
-      }
-
-      if (Array.isArray(res)) {
-        return res.map(r => ({
-          ...(r as INodeExecutionData),
-          pairedItem: { item: itemIndex },
-        }));
-      }
-
-      return [{
-        ...(res as INodeExecutionData),
-        pairedItem: { item: itemIndex },
-      }];
-    };
+    const returnItems: INodeExecutionData[] = [];
 
     for (let i = 0; i < items.length; i++) {
-      const resource = this.getNodeParameter('resource', i) as string;
-      const operation = this.getNodeParameter('operation', i) as string;
-
-      const target = operations[resource]?.[operation];
-      if (!target) {
-        throw new NodeOperationError(
-          this.getNode(),
-          `Invalid operation: ${resource} / ${operation}`,
-          { itemIndex: i },
-        );
-      }
-
-      const fn = getOperationHandler(target);
-
       try {
-        const res = await fn.call(this, i);
-        success.push(...normalizeResult(res, i));
-      } catch (e: unknown) {
-        const message = e instanceof Error
-          ? e.message
-          : 'Operation failed';
+        const resource = this.getNodeParameter('resource', i) as string;
+        const operation = this.getNodeParameter('operation', i) as string;
 
-        error.push({
-          json: {
-            ...items[i].json,
-            _error: { message },
-          },
-          pairedItem: { item: i },
-        });
+        const target = operations[resource]?.[operation];
+        if (!target) {
+          throw new NodeOperationError(
+            this.getNode(),
+            `Invalid operation: ${resource} / ${operation}`,
+            { itemIndex: i },
+          );
+        }
+
+        const handler = getOperationHandler(target);
+        const result = await handler.call(this, i);
+
+        if (Array.isArray(result)) {
+          for (const item of result) {
+            returnItems.push({
+              json: item as JsonObject,
+              pairedItem: { item: i },
+            });
+          }
+        } else if (result !== undefined) {
+          returnItems.push({
+            json: result as JsonObject,
+            pairedItem: { item: i },
+          });
+        }
+      } catch (error) {
+        if (this.continueOnFail()) {
+          returnItems.push({
+            json: {
+              error: extractErrorInfo(error),
+            },
+            pairedItem: { item: i },
+          });
+          continue;
+        }
+
+        throw error;
       }
     }
 
-    return [success, error];
+    return [returnItems];
   }
 }
 
@@ -108,4 +93,50 @@ export function getOperationHandler(op: OperationMeta): OperationHandler {
   }
 
   return fn;
+}
+
+type ErrorResponseData = {
+  message?: string;
+  stackTrace?: string;
+};
+
+type HttpErrorCause = {
+  response?: {
+    data?: ErrorResponseData;
+  };
+};
+
+function extractErrorInfo(error: unknown): {
+  message?: string;
+  description?: string;
+  stacktrace?: string;
+} {
+  if (error instanceof NodeApiError) {
+    const cause = error.cause;
+
+    if (typeof cause === 'object' && cause !== null) {
+      const httpCause = cause as HttpErrorCause;
+      const data = httpCause.response?.data;
+
+      return {
+        message: error.message,
+        description: error.description ?? undefined,
+        stacktrace: data?.stackTrace,
+      };
+    }
+
+    return {
+      message: error.message,
+      description: error.description ?? undefined,
+    };
+  }
+
+  if (error instanceof Error) {
+    return {
+      message: error.message,
+      stacktrace: error.stack,
+    };
+  }
+
+  return {};
 }
